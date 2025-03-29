@@ -1,16 +1,17 @@
-﻿#if EPPNET_UNITY
-///////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////
 /// Filename: UnityVector2Resolver.cs
 /// Date: September 2, 2024
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Data;
+
 using UnityEngine;
 
-namespace EppNet.Data.Unity
+namespace EppNet.Unity.Data
 {
 
-    public class UnityVector2Resolver : VectorResolverBase<Vector2>
+    public class UnityVector2Resolver : UnityVectorResolverBase<Vector2>
     {
 
         public static readonly UnityVector2Resolver Instance = new UnityVector2Resolver();
@@ -282,4 +283,3 @@ namespace EppNet.Data.Unity
     }
 
 }
-#endif

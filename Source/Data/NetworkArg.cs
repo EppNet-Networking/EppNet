@@ -9,6 +9,23 @@ using System.Collections.Generic;
 
 namespace EppNet.Data
 {
+    public interface INetworkArg : ICloneable<INetworkArg>, IEquatable<INetworkArg>, ISignatureEquatable<INetworkArg>
+    {
+        public Type Type { get; }
+
+        public object BoxedValue { get; }
+
+        public object Get() =>
+            BoxedValue;
+    }
+
+    public interface INetworkArg<TArg> : INetworkArg
+    {
+        public TArg Value { get; }
+
+        public new TArg Get() =>
+            Value;
+    }
 
     public sealed class NetworkArg<TArg> : INetworkArg<TArg>
     {

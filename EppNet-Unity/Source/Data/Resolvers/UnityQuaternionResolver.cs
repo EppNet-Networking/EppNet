@@ -1,20 +1,20 @@
-﻿#if EPPNET_UNITY
-///////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////
 /// Filename: UnityQuaternionResolver.cs
 /// Date: August 29, 2024
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Data;
+
 using UnityEngine;
 
-namespace EppNet.Data
+namespace EppNet.Unity.Data
 {
 
     public class UnityQuaternionResolver : QuaternionResolverBase<Quaternion>
     {
 
         public static readonly UnityQuaternionResolver Instance = new UnityQuaternionResolver();
-
 
         public UnityQuaternionResolver()
         {
@@ -170,4 +170,3 @@ namespace EppNet.Data
     }
 
 }
-#endif

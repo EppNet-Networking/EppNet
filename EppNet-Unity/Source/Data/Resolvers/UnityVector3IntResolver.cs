@@ -1,16 +1,17 @@
-﻿#if EPPNET_UNITY
-///////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////
 /// Filename: UnityVector3IntResolver.cs
 /// Date: September 2, 2024
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Data;
+
 using UnityEngine;
 
-namespace EppNet.Data.Unity
+namespace EppNet.Unity.Data
 {
 
-    public class UnityVector3IntResolver : VectorResolverBase<Vector3Int>
+    public class UnityVector3IntResolver : UnityVectorResolverBase<Vector3Int>
     {
 
         public static readonly UnityVector3IntResolver Instance = new UnityVector3IntResolver();
@@ -283,4 +284,3 @@ namespace EppNet.Data.Unity
     }
 
 }
-#endif

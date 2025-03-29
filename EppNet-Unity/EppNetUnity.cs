@@ -1,7 +1,5 @@
-﻿#define EPPNET_UNITY
-
-using EppNet.Data;
-using EppNet.Data.Unity;
+﻿using EppNet.Data;
+using EppNet.Unity.Data;
 
 namespace EppNet
 {

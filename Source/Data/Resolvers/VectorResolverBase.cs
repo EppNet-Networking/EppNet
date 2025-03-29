@@ -65,62 +65,42 @@ namespace EppNet.Data
         protected VectorResolverBase(int size) : base(size) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected virtual void ExtractFloatComponents(T input, Span<float> values)
+        {
+            switch (input)
+            {
+
+                case Vector2 v2:
+                    values[0] = v2.X;
+                    values[1] = v2.Y;
+                    break;
+
+                case Vector3 v3:
+                    values[0] = v3.X;
+                    values[1] = v3.Y;
+                    values[2] = v3.Z;
+                    break;
+
+                case Vector4 v4:
+                    values[0] = v4.X;
+                    values[1] = v4.Y;
+                    values[2] = v4.Z;
+                    values[3] = v4.W;
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected HeaderData _Internal_CreateHeaderWithType(T input, bool signed = false, bool absolute = true)
         {
             int largestTypeIndex = 0;
 
             Span<float> values = stackalloc float[NumComponents];
-
-
-            if (input is Vector2 v2)
-            {
-                values[0] = v2.X;
-                values[1] = v2.Y;
-            }
-            else if (input is Vector3 v3)
-            {
-                values[0] = v3.X;
-                values[1] = v3.Y;
-                values[2] = v3.Z;
-            }
-            else if (input is Vector4 v4)
-            {
-                values[0] = v4.X;
-                values[1] = v4.Y;
-                values[2] = v4.Z;
-                values[3] = v4.W;
-            }
-#if EPPNET_UNITY
-            else if (input is UnityEngine.Vector4 uv4)
-            {
-                values[0] = uv4.x;
-                values[1] = uv4.y;
-                values[2] = uv4.z;
-                values[3] = uv4.w;
-            }
-            else if (input is UnityEngine.Vector3 uv3)
-            {
-                values[0] = uv3.x;
-                values[1] = uv3.y;
-                values[2] = uv3.z;
-            }
-            else if (input is UnityEngine.Vector3Int uv3i)
-            {
-                values[0] = uv3i.x;
-                values[1] = uv3i.y;
-                values[2] = uv3i.z;
-            }
-            else if (input is UnityEngine.Vector2 uv2)
-            {
-                values[0] = uv2.x;
-                values[1] = uv2.y;   
-            }
-            else if (input is UnityEngine.Vector2Int uv2i)
-            {
-                values[0] = uv2i.x;
-                values[1] = uv2i.y;
-            }
-#endif
+            ExtractFloatComponents(input, values);
 
             // Type indices
             // 0 -> byte or sbyte
@@ -128,7 +108,7 @@ namespace EppNet.Data
             // 2 -> uint or int
             // 3 -> float
 
-            for (int i = 0; i < values.Length; i++)
+            for (int i = 0; i < NumComponents; i++)
             {
                 float value = values[i];
                 int typeIndex;
@@ -197,7 +177,7 @@ namespace EppNet.Data
             IResolver._Internal_WriteHeaderAndLength(payload, input.Length);
             bool written = true;
 
-            for (int i = 0; i < input.Length; i++)
+            for (int i = 0; i < NumComponents; i++)
             {
                 if (!written)
                     break;
@@ -214,12 +194,12 @@ namespace EppNet.Data
         public bool Write(BytePayload payload, T input, bool absolute = true)
         {
             byte header = 0;
-            if (input.Equals(Default)
-                || input.Equals(UnitX)
-                || input.Equals(UnitY)
-                || input.Equals(UnitZ)
-                || input.Equals(UnitW)
-                || input.Equals(One))
+            if (input.Equals(Default) ||
+                input.Equals(UnitX) ||
+                input.Equals(UnitY) ||
+                input.Equals(UnitZ) ||
+                input.Equals(UnitW) ||
+                input.Equals(One))
             {
                 if (input.Equals(Default))
                     header = 0;
@@ -247,56 +227,7 @@ namespace EppNet.Data
             }
 
             Span<float> floats = stackalloc float[NumComponents];
-
-            if (input is Vector2 v2)
-            {
-                floats[0] = v2.X;
-                floats[1] = v2.Y;
-            }
-            else if (input is Vector3 v3)
-            {
-                floats[0] = v3.X;
-                floats[1] = v3.Y;
-                floats[2] = v3.Z;
-            }
-            else if (input is Vector4 v4)
-            {
-                floats[0] = v4.X;
-                floats[1] = v4.Y;
-                floats[2] = v4.Z;
-                floats[3] = v4.W;
-            }
-#if EPPNET_UNITY
-            else if (input is UnityEngine.Vector4 uv4)
-            {
-                floats[0] = uv4.x;
-                floats[1] = uv4.y;
-                floats[2] = uv4.z;
-                floats[3] = uv4.w;
-            }
-            else if (input is UnityEngine.Vector3 uv3)
-            {
-                floats[0] = uv3.x;
-                floats[1] = uv3.y;
-                floats[2] = uv3.z;
-            }
-            else if (input is UnityEngine.Vector3Int uv3i)
-            {
-                floats[0] = uv3i.x;
-                floats[1] = uv3i.y;
-                floats[2] = uv3i.z;
-            }
-            else if (input is UnityEngine.Vector2 uv2)
-            {
-                floats[0] = uv2.x;
-                floats[1] = uv2.y;   
-            }
-            else if (input is UnityEngine.Vector2Int uv2i)
-            {
-                floats[0] = uv2i.x;
-                floats[1] = uv2i.y;
-            }
-#endif
+            ExtractFloatComponents(input, floats);
 
             HeaderData data = _Internal_CreateHeaderWithType(input, true, absolute);
             bool written = true;
@@ -308,10 +239,10 @@ namespace EppNet.Data
             {
                 byte components = 0;
 
-                for (int i = 0; i < floats.Length; i++)
+                for (int i = 0; i < NumComponents; i++)
                 {
                     if (floats[i] != 0)
-                        components |= (byte) (components | (1 << i));
+                        components |= (byte)(1 << i);
                 }
 
                 byte shifted = (byte) ((components & 0b111111) << 2);
@@ -320,7 +251,7 @@ namespace EppNet.Data
 
             ByteResolver.Instance.Write(payload, header);
 
-            for (int i = 0; i < floats.Length; i++)
+            for (int i = 0; i < NumComponents; i++)
             {
                 float value = floats[i];
 
@@ -352,7 +283,7 @@ namespace EppNet.Data
 
             byte header = (byte)result;
 
-            bool absolute = (header & 0b1) == 1;
+            bool absolute = (header & 0b10000000) != 0;
             int typeIndex = header & 0b11;
 
             int components = (header >> 2) & 0b1111;
