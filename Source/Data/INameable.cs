@@ -10,14 +10,15 @@ namespace EppNet.Data
     public interface INameable
     {
 
-        public string Name { set; get; }
+        public string Name { get; }
 
         /// <summary>
         /// Checks if the name associated with this is valid<br/>
         /// Default is !<see cref="string.IsNullOrEmpty(string?)"/>
         /// </summary>
         /// <returns></returns>
-        public bool IsNameValid() => !string.IsNullOrEmpty(Name);
+        public bool IsNameValid() =>
+            !string.IsNullOrEmpty(Name);
 
     }
 

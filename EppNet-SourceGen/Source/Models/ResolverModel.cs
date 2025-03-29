@@ -23,6 +23,8 @@ namespace EppNet.SourceGen.Models
         /// </summary>
         public string Namespace { get; } = symbol.ContainingNamespace?.Name ?? string.Empty;
 
+        public string FullyQualifiedName { get; } = symbol.ToDisplayString(Globals.DisplayFormat);
+
         /// <summary>
         /// The fully qualified name of the type this resolver resolves.
         /// </summary>
@@ -35,6 +37,7 @@ namespace EppNet.SourceGen.Models
         public bool Equals(ResolverModel other) =>
             Name == other.Name &&
             Namespace == other.Namespace &&
+            FullyQualifiedName == other.FullyQualifiedName &&
             ResolvedTypeFullName == other.ResolvedTypeFullName;
 
         public override string ToString() =>
@@ -43,6 +46,7 @@ namespace EppNet.SourceGen.Models
         public override int GetHashCode() =>
             Name.GetHashCode() ^ 
             Namespace.GetHashCode() ^
+            FullyQualifiedName.GetHashCode() ^
             ResolvedTypeFullName.GetHashCode();
 
         public static bool operator ==(ResolverModel left, ResolverModel right) =>
