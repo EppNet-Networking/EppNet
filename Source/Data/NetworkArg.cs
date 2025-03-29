@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using System;
+using System.Collections.Generic;
 
 namespace EppNet.Data
 {
@@ -21,13 +22,11 @@ namespace EppNet.Data
                 if (value is TArg arg)
                     Value = arg;
                 else
-                    throw new ArgumentException("arg");
+                    throw new ArgumentException($"Value must be of type {typeof(TArg)}");
             }
 
             get => Value;
         }
-
-        public IResolver<TArg> Resolver { private set; get; }
 
         public Type Type { get => typeof(TArg); }
 
@@ -42,12 +41,10 @@ namespace EppNet.Data
             new NetworkArg<TArg>(Value);
 
         public bool Equals(INetworkArg other) =>
-            other is not null &&
             other is NetworkArg<TArg> oNetArg &&
-            Value.Equals(oNetArg.Value);
+            EqualityComparer<TArg>.Default.Equals(Value, oNetArg.Value);
 
         public bool SignatureEquals(INetworkArg other) =>
-            other is not null &&
             other is NetworkArg<TArg>;
     }
 
