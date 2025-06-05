@@ -5,7 +5,6 @@
 //////////////////////////////////////////////
 
 using ENet;
-using EppNet.Data;
 
 using EppNet.Data.Datagrams;
 using EppNet.Logging;
@@ -13,7 +12,6 @@ using EppNet.Utilities;
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 
 namespace EppNet.Messaging
@@ -277,7 +275,8 @@ namespace EppNet.Messaging
             DatagramReceived = null;
         }
 
-        public bool Equals(Channel other) => other.Id == Id;
+        public bool Equals(Channel other)
+             => other.Id == Id;
 
         public override bool Equals(object obj)
         {
@@ -290,17 +289,17 @@ namespace EppNet.Messaging
             return false;
         }
 
-        public override int GetHashCode() => Id;
+        public override int GetHashCode()
+            => Id;
 
-        public static bool operator ==(Channel left, Channel right) => left.Equals(right);
+        public static bool operator ==(Channel left, Channel right)
+            => left?.Equals(right) ?? false;
 
-        public static bool operator ==(Channel left, Channels right) => left.Equals(right);
+        public static bool operator !=(Channel left, Channel right)
+            => !left?.Equals(right) ?? true;
 
-        public static bool operator !=(Channel left, Channel right) => !left.Equals(right);
-
-        public static bool operator !=(Channel left, Channels right) => !left.Equals(right);
-
-        public static explicit operator byte(Channel channel) => channel.Id;
+        public static explicit operator byte(Channel channel)
+            => channel.Id;
     }
 
 }
