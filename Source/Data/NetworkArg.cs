@@ -30,7 +30,16 @@ namespace EppNet.Data
     public sealed class NetworkArg<TArg> : INetworkArg<TArg>
     {
 
+        /// <summary>
+        /// The object wrapped by this class.
+        /// </summary>
+
         public TArg Value { set; get; }
+
+        /// <summary>
+        /// <strong>NOTE:</strong> Uses boxing to set the internal value!<br/>
+        /// Prefer typesafe assignment with <see cref="Type"/>
+        /// </summary>
 
         public object BoxedValue
         {
@@ -45,6 +54,10 @@ namespace EppNet.Data
             get => Value;
         }
 
+        /// <summary>
+        /// The <see cref="System.Type"/> of the value wrapped by this class.
+        /// </summary>
+
         public Type Type { get => typeof(TArg); }
 
         public NetworkArg() { }
@@ -54,15 +67,52 @@ namespace EppNet.Data
             this.Value = value;
         }
 
+        /// <summary>
+        /// Creates a "shallow" copy; meaning, if <see cref="Value"/><br/>
+        /// is a reference type, the copy will refer to the existing object.
+        /// </summary>
+        /// <returns></returns>
+
         public INetworkArg Clone() =>
             new NetworkArg<TArg>(Value);
+
+        /// <summary>
+        /// Checks if the provided <see cref="INetworkArg"/> is of the
+        /// same type AND<br/> the value is equivalent according to the
+        /// default <see cref="EqualityComparer"/> for <typeparamref name="TArg"/>.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
 
         public bool Equals(INetworkArg other) =>
             other is NetworkArg<TArg> oNetArg &&
             EqualityComparer<TArg>.Default.Equals(Value, oNetArg.Value);
 
+        /// <summary>
+        /// Checks if the provided <see cref="INetworkArg"/> wraps an equivalent
+        /// <typeparamref name="TArg"/>.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+
         public bool SignatureEquals(INetworkArg other) =>
             other is NetworkArg<TArg>;
+
+        /// <summary>
+        /// Checks if the provided <see cref="INetworkArg"/> wraps a compatible
+        /// <typeparamref name="TArg"/>.<br/>
+        /// Compatibility is:<br/>
+        /// - Type argument equivalence; OR<br/>
+        /// - Direct or indirect type derivation
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+
+        public bool IsCompatibleWith(INetworkArg other) =>
+            SignatureEquals(other) ||
+            other is not null &&
+            (other.Type.IsAssignableFrom(Type) ||
+            Type.IsAssignableFrom(other.Type));
     }
 
 }
