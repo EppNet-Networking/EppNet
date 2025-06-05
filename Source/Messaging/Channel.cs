@@ -5,6 +5,7 @@
 //////////////////////////////////////////////
 
 using ENet;
+using EppNet.Data;
 
 using EppNet.Data.Datagrams;
 using EppNet.Logging;
@@ -12,6 +13,7 @@ using EppNet.Utilities;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 
 namespace EppNet.Messaging
@@ -170,26 +172,73 @@ namespace EppNet.Messaging
             }
         }
 
-        public bool SendTo(Peer peer, byte[] bytes, PacketFlags flags)
+        /// <summary>
+        /// Tries to send an <see cref="ArraySegment"/> of bytes to the specified <see cref="Peer"/> 
+        /// with the specified <see cref="PacketFlags"/>.<br/>
+        /// Length of -1 means the entire buffer will be sent.<br/><br/>
+        /// 
+        /// Return:<br/>
+        /// - 0 -> Success<br/>
+        /// - 1 -> Invalid data<br/>
+        /// - 2 -> An exception occurred<br/>
+        /// </summary>
+        /// <param name="peer"></param>
+        /// <param name="buffer"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+
+        public int TrySendTo(Peer peer, ArraySegment<byte> buffer, PacketFlags flags = PacketFlags.None)
         {
-            // Create an ENet packet
-            Packet packet = new();
+            if (buffer.Count < 1)
+                return 1;
+
+            return TrySendTo(peer, buffer.Array, buffer.Offset, buffer.Count, flags);
+        }
+
+        /// <summary>
+        /// Tries to send a byte array to the specified <see cref="Peer"/> 
+        /// with the specified <see cref="PacketFlags"/>.<br/>
+        /// Length of -1 means the entire buffer will be sent.<br/><br/>
+        /// 
+        /// Return:<br/>
+        /// - 0 -> Success<br/>
+        /// - 1 -> Invalid data<br/>
+        /// - 2 -> An exception occurred<br/>
+        /// </summary>
+        /// <param name="peer"></param>
+        /// <param name="buffer"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+
+        public int TrySendTo(Peer peer, byte[] bytes, int offset, int length = -1, PacketFlags flags = PacketFlags.None)
+        {
+            if (bytes == null)
+                return 1;
+
+            Packet packet = default;
 
             try
             {
-                packet.Create(bytes, flags);
+                unsafe
+                {
+                    fixed (byte* bufferPtr = bytes)
+                    {
+                        IntPtr nativePtr = (IntPtr)(bufferPtr + offset);
+                        packet.Create(nativePtr, length == -1 ? bytes.Length : length, flags);
+                    }
+                }
 
                 // Send the packet to our ENet peer
                 if (peer.Send(Id, ref packet))
                 {
                     Interlocked.Increment(ref _datagramsReceived);
-                    Interlocked.Add(ref _totalBytesSent, bytes.LongLength);
-                    return true;
+                    Interlocked.Add(ref _totalBytesSent, length);
+                    return 0;
                 }
             }
             catch (Exception ex)
             {
-                Notify.Error($"Failed to send Datagram to Peer {peer.ID}. Error {ex.Message}\n{ex.StackTrace}");
+                Notify.Error($"Failed to send data to Peer {peer.ID}. Error {ex.Message}\n{ex.StackTrace}");
             }
             finally
             {
@@ -197,8 +246,8 @@ namespace EppNet.Messaging
                 packet.Dispose();
             }
 
-            // Failed to send the datagram.
-            return false;
+            // An exception occurred.
+            return 2;
         }
 
         /// <summary>

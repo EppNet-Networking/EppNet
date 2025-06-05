@@ -13,6 +13,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>EppNet</RootNamespace>
 	  <LangVersion>9.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="packages\Microsoft.NET.Test.Sdk.17.10.0\**" />

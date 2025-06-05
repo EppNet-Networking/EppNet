@@ -16,6 +16,7 @@
 /// </summary>
 
 
+using ENet;
 using EppNet.Utilities;
 
 using Microsoft.IO;
@@ -474,10 +475,7 @@ namespace EppNet.Data
 
         public virtual byte[] Pack()
         {
-            if (Stream == null)
-                return null;
-
-            if (PackedData == null)
+            if (Stream != null && PackedData != null)
             {
                 this.PackedData = new byte[Stream.Length];
                 Stream.WriteTo(PackedData);
@@ -518,9 +516,8 @@ namespace EppNet.Data
 
         public string ReadString(int length)
         {
-            Span<byte> buffer = stackalloc byte[length];
+            Span<byte> buffer = stackalloc byte[Encoder.GetMaxByteCount(length)];
             int read = Stream.Read(buffer);
-
             return Encoder.GetString(buffer);
         }
 

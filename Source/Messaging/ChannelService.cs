@@ -38,23 +38,64 @@ namespace EppNet.Messaging
             return true;
         }
 
-        public bool TrySendTo(Peer peer, IDatagram datagram, PacketFlags flags)
+        /// <summary>
+        /// Tries to send a Datagram to the specified <see cref="Peer"/> 
+        /// with the specified <see cref="PacketFlags"/>.<br/><br/>
+        /// 
+        /// Return:<br/>
+        /// - 0 -> Success<br/>
+        /// - 1 -> Invalid data<br/>
+        /// - 2 -> An exception occurred<br/>
+        /// - 3 -> Channel not found
+        /// </summary>
+        /// <param name="peer"></param>
+        /// <param name="buffer"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+
+        public int TrySendTo(Peer peer, Datagram datagram, PacketFlags flags = PacketFlags.None)
         {
+
+            if (datagram is null)
+                return 1;
 
             if (!datagram.Written)
                 datagram.Write();
 
-            Channel channel = GetChannelById(datagram.GetChannelID());
-            return channel?.SendTo(peer, datagram.Pack(), flags) == true;
+            if (!datagram.Stream.TryGetBuffer(out ArraySegment<byte> buffer))
+                return 1;
+
+            return TrySendDataTo(peer, datagram.ChannelID, buffer.Array, buffer.Offset, buffer.Count, flags);
         }
 
-        public bool TrySendDataTo(Peer peer, byte channelId, byte[] bytes, PacketFlags flags)
+        /// <summary>
+        /// Tries to send a byte array to the specified <see cref="Peer"/> 
+        /// with the specified offset, length, and <see cref="PacketFlags"/>.<br/>
+        /// Length of -1 means the entire buffer will be sent.<br/><br/>
+        /// 
+        /// Return:<br/>
+        /// - 0 -> Success<br/>
+        /// - 1 -> Invalid data<br/>
+        /// - 2 -> An exception occurred<br/>
+        /// - 3 -> Channel does not exist
+        /// </summary>
+        /// <param name="peer"></param>
+        /// <param name="buffer"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+
+        public int TrySendDataTo(Peer peer, byte channelId, byte[] bytes, int offset, int length = -1, PacketFlags flags = PacketFlags.None)
         {
             Channel channel = GetChannelById(channelId);
-            return channel?.SendTo(peer, bytes, flags) == true;
+
+            if (channel is not null)
+                return channel.TrySendTo(peer, bytes, offset, length, flags);
+
+            return 3;
         }
 
-        public bool TryAddChannel(byte id) => TryAddChannel(id, out Channel _);
+        public bool TryAddChannel(byte id)
+            => TryAddChannel(id, out Channel _);
 
         public bool TryAddChannel(byte id, out Channel newChannel, ChannelFlags flags = ChannelFlags.None)
         {
