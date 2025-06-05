@@ -253,7 +253,8 @@ namespace EppNet.Messaging
         /// </summary>
         /// <param name="flag"></param>
         /// <returns></returns>
-        public bool HasFlag(ChannelFlags flag) => Flags.HasFlag(flag);
+        public bool HasFlag(ChannelFlags flag) =>
+            Flags.HasFlag(flag);
 
         /// <summary>
         /// Atomically resets all channel statistics back to 0.
@@ -275,8 +276,8 @@ namespace EppNet.Messaging
             DatagramReceived = null;
         }
 
-        public bool Equals(Channel other)
-             => other.Id == Id;
+        public bool Equals(Channel other) =>
+            other.Id == Id;
 
         public override bool Equals(object obj)
         {
@@ -289,17 +290,17 @@ namespace EppNet.Messaging
             return false;
         }
 
-        public override int GetHashCode()
-            => Id;
+        public override int GetHashCode() =>
+            Id;
 
-        public static bool operator ==(Channel left, Channel right)
-            => left?.Equals(right) ?? false;
+        public static bool operator ==(Channel left, Channel right) =>
+            left?.Equals(right) ?? false;
 
-        public static bool operator !=(Channel left, Channel right)
-            => !left?.Equals(right) ?? true;
+        public static bool operator !=(Channel left, Channel right) =>
+            !left?.Equals(right) ?? true;
 
-        public static explicit operator byte(Channel channel)
-            => channel.Id;
+        public static explicit operator byte(Channel channel) =>
+            channel.Id;
     }
 
 }
