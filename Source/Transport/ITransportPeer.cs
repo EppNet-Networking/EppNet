@@ -4,7 +4,6 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
-using System;
 using EppNet.Data;
 
 public interface ITransportPeer : IDataHolder
@@ -44,7 +43,5 @@ public interface ITransportPeer : IDataHolder
     /// Whether or not this peer is connected
     /// </summary>
     bool IsConnected { get; }
-
-
 
 }

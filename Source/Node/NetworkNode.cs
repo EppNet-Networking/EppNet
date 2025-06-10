@@ -111,6 +111,8 @@ namespace EppNet.Node
 
         public Configuration Configuration { get; }
 
+        public NodeDataStorage DataStorage { get; }
+
         internal ServiceManager _serviceMgr;
         internal BaseSocket _socket;
 

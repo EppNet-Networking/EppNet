@@ -12,6 +12,6 @@ using System;
 public interface ITransport : INodeDescendant, IRunnable, IDisposable
 {
 
-
+    
 
 }
