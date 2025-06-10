@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace EppNet.Data
 {
@@ -23,7 +24,7 @@ namespace EppNet.Data
         /// just hide poor memory management.
         /// <br></br>Just make sure you call dispose!
         /// </summary>
-        internal static readonly Dictionary<IDataHolder, Dictionary<string, object>> _globalDataDict = new();
+        internal static readonly ConditionalWeakTable<IDataHolder, Dictionary<string, object>> _globalDataDict = new();
 
         /// <summary>
         /// Tries to get all data associated with a particular <see cref="IDataHolder"/><br></br>

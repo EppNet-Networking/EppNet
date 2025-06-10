@@ -1,0 +1,12 @@
+///////////////////////////////////////////////////////
+/// Filename: IResizeStrategy.cs
+/// Date: June 9, 2025
+/// Author: Maverick Liberty
+///////////////////////////////////////////////////////
+
+public interface IResizeStrategy
+{
+
+    int Resize(int neededBytes);
+
+}

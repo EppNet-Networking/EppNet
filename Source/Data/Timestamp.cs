@@ -14,8 +14,8 @@ namespace EppNet.Data
 {
 
     /// <summary>
-    /// Essentially a tuple grouping the network time shown and the local monotonic time<br/>
-    /// Comparisons are done using the monotonic time to keep timestamps unaffected by clock syncs
+    /// Essentially a tuple grouping the network time shown and the local steady time<br/>
+    /// Comparisons are done using the local time to keep timestamps unaffected by clock syncs
     /// </summary>
     public readonly struct Timestamp : IComparable, IComparable<Timestamp>, IEquatable<Timestamp>
     {
@@ -27,23 +27,19 @@ namespace EppNet.Data
         /// </summary>
         public TimeSpan NetworkTime { get; }
 
-        /// <summary>
-        /// The time as specified by <see cref="ENet.Library.Time"/> which is the time since
-        /// the internal ENet library started (in milliseconds)
-        /// </summary>
-        public TimeSpan MonotonicTime { get; }
+        public TimeSpan LocalTime { get; }
 
         public Timestamp(TimeSpan netTime)
         {
             this.NetworkTime = netTime;
-            this.MonotonicTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
+            this.LocalTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
         }
 
         public Timestamp([NotNull] NetworkNode node)
         {
             Guard.AgainstNull(node);
             this.NetworkTime = node.Time;
-            this.MonotonicTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
+            this.LocalTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
         }
 
         public Timestamp([NotNull] INodeDescendant nodeDescendant)
@@ -51,13 +47,13 @@ namespace EppNet.Data
             Guard.AgainstNull(nodeDescendant);
             Guard.AgainstNull(nodeDescendant.Node);
             this.NetworkTime = nodeDescendant.Node.Time;
-            this.MonotonicTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
+            this.LocalTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
         }
 
         public Timestamp(TimeSpan netTime, TimeSpan monoTime)
         {
             this.NetworkTime = netTime;
-            this.MonotonicTime = monoTime;
+            this.LocalTime = monoTime;
         }
 
         public int CompareTo(object obj)
@@ -66,7 +62,7 @@ namespace EppNet.Data
             0;
 
         public int CompareTo(Timestamp other)
-            => other.MonotonicTime.CompareTo(MonotonicTime);
+            => other.LocalTime.CompareTo(LocalTime);
 
         public override bool Equals(object obj)
             => obj is Timestamp ts &&
@@ -74,13 +70,13 @@ namespace EppNet.Data
 
         public bool Equals(Timestamp other)
             => other.NetworkTime.Equals(NetworkTime) &&
-            other.MonotonicTime.Equals(MonotonicTime);
+            other.LocalTime.Equals(LocalTime);
 
         public override int GetHashCode()
-            => NetworkTime.GetHashCode() ^ MonotonicTime.GetHashCode();
+            => NetworkTime.GetHashCode() ^ LocalTime.GetHashCode();
 
         public override string ToString()
-            => $"Network(ticks): {NetworkTime.Ticks}\nMonotonic(ticks): {MonotonicTime.Ticks}";
+            => $"Network(ticks): {NetworkTime.Ticks}\nLocal(ticks): {LocalTime.Ticks}";
 
         public static bool operator ==(Timestamp left, Timestamp right)
             => left.Equals(right);
@@ -89,16 +85,16 @@ namespace EppNet.Data
             => !left.Equals(right);
 
         public static bool operator >(Timestamp left, Timestamp right)
-            => left.MonotonicTime > right.MonotonicTime;
+            => left.LocalTime > right.LocalTime;
 
         public static bool operator <(Timestamp left, Timestamp right)
-            => left.MonotonicTime < right.MonotonicTime;
+            => left.LocalTime < right.LocalTime;
 
         public static bool operator >=(Timestamp left, Timestamp right)
-            => left.MonotonicTime >= right.MonotonicTime;
+            => left.LocalTime >= right.LocalTime;
 
         public static bool operator <=(Timestamp left, Timestamp right)
-            => left.MonotonicTime <= right.MonotonicTime;
+            => left.LocalTime <= right.LocalTime;
     }
 
 }
