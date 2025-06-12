@@ -7,6 +7,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
+[DebuggerDisplay("Capacity = {Capacity}, Length = {Length}, IsPooled = {IsPooled}")]
 public sealed class BytePayload : IDisposable
 {
 
@@ -151,6 +152,7 @@ public sealed class BytePayload : IDisposable
 
 }
 
+[DebuggerDisplay("Position = {Position}, BytesWritten = {BytesWritten}")]
 public ref struct BytePayloadWriter
 {
 
@@ -214,7 +216,7 @@ public ref struct BytePayloadWriter
         Position += data.Length;
 
         // Update buffer length and last use
-        _owner.Length = Math.Max(Position, _owner.Length);
+        _owner.Length = Position;
         _owner.Touch();
 
         BytesWritten += data.Length;
@@ -228,7 +230,7 @@ public ref struct BytePayloadWriter
     /// <returns></returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Span<byte> Reserve(int bytes)
+    public Span<byte> Reserve(int bytes, bool clear = true)
     {
 #if DEBUG
         if (_owner.IsDestroyed)
@@ -237,11 +239,15 @@ public ref struct BytePayloadWriter
 
         _owner.EnsureCapacity(bytes);
         Span<byte> slice = new(_owner.Buffer, Position, bytes);
+
+        if (clear)
+            slice.Clear();
+
         Position += bytes;
         BytesWritten += bytes;
 
         // Update buffer length and last use
-        _owner.Length = Math.Max(Position, _owner.Length);
+        _owner.Length = Position;
         _owner.Touch();
         return slice;
     }
@@ -250,13 +256,25 @@ public ref struct BytePayloadWriter
     /// Advances the current position of the buffer by the specified number of bytes
     /// </summary>
     /// <param name="bytes"></param>
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int bytes) =>
         Position = Math.Min(Position + bytes, _owner.Length);
 
+
+    /// <summary>
+    /// Resets the position of the writer to the beginning of the buffer<br/>
+    /// Resets <see cref="BytesWritten"/> to 0<br/><br/>
+    /// <strong>NOTE!</strong> Does not undo bytes written to the buffer!
+    /// </summary>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset() =>
+        this.Position = BytesWritten = 0;
+
 }
 
+[DebuggerDisplay("Position = {Position}, Remaining = {Remaining}, BytesRead = {BytesRead}")]
 public ref struct BytePayloadReader
 {
 
@@ -292,6 +310,13 @@ public ref struct BytePayloadReader
         this.BytesRead = 0;
     }
 
+    /// <summary>
+    /// Tries to peek the byte at the current position<br/>
+    /// If successful, outputs the byte
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns>Whether or not a byte is available to peek</returns>
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryPeekByte(out byte value)
     {
@@ -305,6 +330,113 @@ public ref struct BytePayloadReader
         _owner.Touch();
         return true;
     }
+
+    /// <summary>
+    /// Tries to peek the byte at the current position<br/>
+    /// If successful, outputs the byte
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns>Whether or not a byte is available to peek</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryPeek(out byte value) =>
+        TryPeekByte(out value);
+
+    /// <summary>
+    /// Tries to peek the specified amount of bytes<br/>
+    /// If successful, outputs a ReadOnlySpan<byte> containing the bytes
+    /// </summary>
+    /// <param name="count"></param>
+    /// <param name="data"></param>
+    /// <returns>Whether or not the specified number of bytes could be peeked</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryPeekBytes(int count, out ReadOnlySpan<byte> data)
+    {
+        if (_owner.IsDestroyed || Position + count > _owner.Length)
+        {
+            data = default;
+            return false;
+        }
+
+        _owner.Touch();
+        data = new ReadOnlySpan<byte>(_owner.Buffer, Position, count);
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to peek the specified amount of bytes<br/>
+    /// If successful, outputs a ReadOnlySpan<byte> containing the bytes
+    /// </summary>
+    /// <param name="count"></param>
+    /// <param name="data"></param>
+    /// <returns>Whether or not the specified number of bytes could be peeked</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryPeek(int count, out ReadOnlySpan<byte> data) =>
+        TryPeekByte(count, out data);
+
+    /// <summary>
+    /// Peeks the byte at the current position
+    /// </summary>
+    /// <returns>The byte peeked</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte PeekByte()
+    {
+#if DEBUG
+        if (_owner.IsDestroyed)
+            throw new ObjectDisposedException("BytePayload has been disposed!");
+        if (!HasRemaining)
+            throw new IndexOutOfRangeException("Attempted to peek beyond buffer length!");
+#endif
+
+        _owner.Touch();
+        return _owner.Buffer[Position];
+    }
+
+    /// <summary>
+    /// Peeks the byte at the current position
+    /// </summary>
+    /// <returns>The byte peeked</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte Peek() =>
+        PeekByte();
+
+    /// <summary>
+    /// Peeks the specified number of bytes at the current position
+    /// </summary>
+    /// <returns>The bytes peeked</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> PeekBytes(int count)
+    {
+#if DEBUG
+        if (_owner.IsDestroyed)
+            throw new ObjectDisposedException("BytePayload has been disposed!");
+        if (Position + count > _owner.Length)
+            throw new IndexOutOfRangeException("Attempted to peek beyond buffer length!");
+#endif
+        _owner.Touch();
+        return new(_owner.Buffer, Position, count);
+    }
+
+    /// <summary>
+    /// Peeks the specified number of bytes at the current position
+    /// </summary>
+    /// <returns>The bytes peeked</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> Peek(int count) =>
+        PeekBytes(count);
+
+    /// <summary>
+    /// Tries to read the byte at the current position<br/>
+    /// If successful, outputs the byte
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns>Whether or not a byte is available to read</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryReadByte(out byte value)
@@ -321,24 +453,53 @@ public ref struct BytePayloadReader
         return true;
     }
 
+    /// <summary>
+    /// Tries to read the byte at the current position<br/>
+    /// If successful, outputs the byte
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns>Whether or not a byte is available to read</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryRead(out byte value) =>
+        TryReadByte(out value);
+
+    /// <summary>
+    /// Reads the byte at the current position<br/>
+    /// </summary>
+    /// <returns>The byte read</returns>
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte ReadByte()
     {
 #if DEBUG
         if (_owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
-
         if (Position >= _owner.Length)
             throw new IndexOutOfRangeException("Attempted to read beyond buffer length!");
 #endif
 
-        byte value = _owner.Buffer[_Position++];
+        byte value = _owner.Buffer[Position++];
         _owner.Touch();
 
         BytesRead++;
 
         return value;
     }
+
+    /// <summary>
+    /// Reads the byte at the current position<br/>
+    /// </summary>
+    /// <returns>The byte read</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte Read() =>
+        ReadBytes();
+
+    /// <summary>
+    /// Reads the specified number of bytes at the current position<br/>
+    /// </summary>
+    /// <returns>The bytes read</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<byte> ReadBytes(int count)
@@ -359,12 +520,30 @@ public ref struct BytePayloadReader
     }
 
     /// <summary>
+    /// Reads the specified number of bytes at the current position<br/>
+    /// </summary>
+    /// <returns>The bytes read</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> Read(int count) =>
+        ReadBytes(count);
+
+    /// <summary>
     /// Advances the current position of the buffer by the specified number of bytes
     /// </summary>
     /// <param name="bytes"></param>
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int bytes) =>
         Position = Math.Min(Position + bytes, _owner.Length);
+
+    /// <summary>
+    /// Resets the position of the reader to the beginning of the buffer<br/>
+    /// Sets <see cref="BytesRead"/> to 0
+    /// </summary>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset() =>
+        this.Position = BytesRead = 0;
 
 }
