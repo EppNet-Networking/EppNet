@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 [DebuggerDisplay("Capacity = {Capacity}, Length = {Length}, IsPooled = {IsPooled}")]
@@ -318,7 +319,7 @@ public ref struct BytePayloadReader
     /// <returns>Whether or not a byte is available to peek</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryPeekByte(out byte value)
+    public readonly bool TryPeekByte(out byte value)
     {
         if (_owner.IsDestroyed || !HasRemaining)
         {
@@ -339,7 +340,7 @@ public ref struct BytePayloadReader
     /// <returns>Whether or not a byte is available to peek</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryPeek(out byte value) =>
+    public readonly bool TryPeek(out byte value) =>
         TryPeekByte(out value);
 
     /// <summary>
@@ -351,7 +352,7 @@ public ref struct BytePayloadReader
     /// <returns>Whether or not the specified number of bytes could be peeked</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryPeekBytes(int count, out ReadOnlySpan<byte> data)
+    public readonly bool TryPeekBytes(int count, out ReadOnlySpan<byte> data)
     {
         if (_owner.IsDestroyed || Position + count > _owner.Length)
         {
@@ -373,8 +374,8 @@ public ref struct BytePayloadReader
     /// <returns>Whether or not the specified number of bytes could be peeked</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryPeek(int count, out ReadOnlySpan<byte> data) =>
-        TryPeekByte(count, out data);
+    public readonly bool TryPeek(int count, out ReadOnlySpan<byte> data) =>
+        TryPeekBytes(count, out data);
 
     /// <summary>
     /// Peeks the byte at the current position
@@ -382,7 +383,7 @@ public ref struct BytePayloadReader
     /// <returns>The byte peeked</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte PeekByte()
+    public readonly byte PeekByte()
     {
 #if DEBUG
         if (_owner.IsDestroyed)
@@ -401,7 +402,7 @@ public ref struct BytePayloadReader
     /// <returns>The byte peeked</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte Peek() =>
+    public readonly byte Peek() =>
         PeekByte();
 
     /// <summary>
@@ -410,7 +411,7 @@ public ref struct BytePayloadReader
     /// <returns>The bytes peeked</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ReadOnlySpan<byte> PeekBytes(int count)
+    public readonly ReadOnlySpan<byte> PeekBytes(int count)
     {
 #if DEBUG
         if (_owner.IsDestroyed)
@@ -428,7 +429,7 @@ public ref struct BytePayloadReader
     /// <returns>The bytes peeked</returns>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ReadOnlySpan<byte> Peek(int count) =>
+    public readonly ReadOnlySpan<byte> Peek(int count) =>
         PeekBytes(count);
 
     /// <summary>
@@ -494,7 +495,7 @@ public ref struct BytePayloadReader
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte Read() =>
-        ReadBytes();
+        ReadByte();
 
     /// <summary>
     /// Reads the specified number of bytes at the current position<br/>
