@@ -26,8 +26,24 @@ public sealed class BytePayload : IDisposable
 
     public IResizeStrategy ResizeStrategy;
 
+    public byte Header
+    {
+        set
+        {
+            if (Buffer.Length > 0)
+                Buffer[0] = value;
+        }
+        get => Buffer.Length > 0 ? Buffer[0] : (byte) 0;
+    }
+
     private readonly BytePayloadPool _pool;
 
+    /// <summary>
+    /// Creates a payload that makes use of the specified <see cref="BytePayloadPool"/>
+    /// </summary>
+    /// <param name="pool"></param>
+    /// <param name="capacity"></param>
+    /// <exception cref="ArgumentNullException"></exception>
     internal BytePayload(BytePayloadPool pool, int capacity)
     {
         this._pool = pool ?? throw new ArgumentNullException(nameof(pool));
@@ -36,9 +52,16 @@ public sealed class BytePayload : IDisposable
         this.Capacity = capacity;
         this.Length = 0;
         this.LastUse = DateTime.Now;
-        this.Buffer = new byte[capacity];
+        this.Buffer = pool.ArrayPool.Rent(capacity);
         this.ResizeStrategy = pool.ResizeStrategy;
     }
+
+    /// <summary>
+    /// Creates an independent payload that does not use any kind of pooling.
+    /// </summary>
+    /// <param name="resizeStrategy"></param>
+    /// <param name="capacity"></param>
+    /// <exception cref="ArgumentNullException"></exception>
 
     internal BytePayload(IResizeStrategy resizeStrategy, int capacity)
     {
@@ -92,17 +115,26 @@ public sealed class BytePayload : IDisposable
         if (IsDestroyed || newSize <= Capacity)
             return;
 
-        byte[] newBuffer = new byte[newSize];
+        byte[] newBuffer = _pool?.ArrayPool.Rent(newSize) ?? new byte[newSize];
         System.Buffer.BlockCopy(Buffer, 0, newBuffer, 0, Length);
+        _pool?.ArrayPool.Return(Buffer, true);
 
         this.Buffer = newBuffer;
         this.Capacity = newSize;
     }
 
-    public void Reset()
+    /// <summary>
+    /// Resets this payload's length
+    /// </summary>
+    /// <param name="clear"></param>
+
+    public void Reset(bool clear = true)
     {
-        if (Buffer is not null)
+        if (Buffer is not null && clear)
+        {
+            Header = 0;
             Array.Clear(Buffer, 0, Length);
+        }
 
         Length = 0;
         LastUse = DateTime.Now;
@@ -117,10 +149,12 @@ public sealed class BytePayload : IDisposable
         if (IsDestroyed || Buffer is null)
             return;
 
-        Reset();
+        bool willPool = _pool is not null && !IsPooled;
+        Reset(clear: !willPool);
 
-        if (_pool is not null)
+        if (willPool)
         {
+            _pool.ArrayPool.Return(Buffer, true);
             _pool.Return(this);
             this.IsPooled = true;
         }
@@ -135,10 +169,12 @@ public sealed class BytePayload : IDisposable
     {
         if (!IsDestroyed && Buffer is not null)
         {
+            _pool?.ArrayPool.Return(Buffer, true);
             this.Buffer = Array.Empty<byte>();
             this.Length = this.Capacity = 0;
             this.IsDestroyed = true;
             this.IsPooled = false;
+            this.LastUse = DateTime.MinValue;
         }
     }
 
@@ -163,17 +199,17 @@ public ref struct BytePayloadWriter
 
     private readonly BytePayload _owner;
 
-    public BytePayloadWriter(BytePayload owner)
+    public BytePayloadWriter(BytePayload owner, bool reserveHeader = true)
     {
         if (owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
 
         this._owner = owner;
-        this.Position = 0;
+        this.Position = reserveHeader ? 1 : 0;
         this.BytesWritten = 0;
     }
 
-    public BytePayloadWriter(BytePayload owner, int offset)
+    public BytePayloadWriter(BytePayload owner, int offset, bool reserveHeader = true)
     {
         if (owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
@@ -182,9 +218,14 @@ public ref struct BytePayloadWriter
             throw new ArgumentOutOfRangeException("Offset is out of bounds!");
 
         this._owner = owner;
-        this.Position = offset;
+        this.Position = reserveHeader ? 1 + offset : offset;
         this.BytesWritten = 0;
     }
+
+    /// <summary>
+    /// Writes the specified byte to the buffer
+    /// </summary>
+    /// <param name="value"></param>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteByte(byte value)
@@ -198,14 +239,28 @@ public ref struct BytePayloadWriter
         _owner.Buffer[Position++] = value;
         _owner.Touch();
 
-        _owner.Length++;
+        _owner.Length = Math.Max(_owner.Length, Position);
 
         // Update bytes written
         BytesWritten++;
     }
 
+    /// <summary>
+    /// Writes the specified byte to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteBytes(ReadOnlySpan<byte> data)
+    public void Write(byte value) =>
+        WriteByte(value);
+
+    /// <summary>
+    /// Writes the specified span to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void WriteBytes(Span<byte> data)
     {
 #if DEBUG
         if (_owner.IsDestroyed)
@@ -217,11 +272,20 @@ public ref struct BytePayloadWriter
         Position += data.Length;
 
         // Update buffer length and last use
-        _owner.Length = Position;
+        _owner.Length = Math.Max(_owner.Length, Position);
         _owner.Touch();
 
         BytesWritten += data.Length;
     }
+
+    /// <summary>
+    /// Writes the specified span to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write(Span<byte> data) =>
+        WriteBytes(data);
 
     /// <summary>
     /// Reserves the specified number of bytes for writing<br/>
@@ -248,7 +312,7 @@ public ref struct BytePayloadWriter
         BytesWritten += bytes;
 
         // Update buffer length and last use
-        _owner.Length = Position;
+        _owner.Length = Math.Max(_owner.Length, Position);
         _owner.Touch();
         return slice;
     }
@@ -288,17 +352,17 @@ public ref struct BytePayloadReader
 
     private readonly BytePayload _owner;
 
-    public BytePayloadReader(BytePayload owner)
+    public BytePayloadReader(BytePayload owner, bool skipHeader = true)
     {
         if (owner.IsDestroyed)
             throw new ObjectDisposedException(nameof(owner));
 
         this._owner = owner;
-        this.Position = 0;
+        this.Position = skipHeader ? 1 : 0;
         this.BytesRead = 0;
     }
 
-    public BytePayloadReader(BytePayload owner, int offset)
+    public BytePayloadReader(BytePayload owner, int offset, bool skipHeader = true)
     {
         if (owner.IsDestroyed)
             throw new ObjectDisposedException(nameof(owner));
@@ -307,7 +371,7 @@ public ref struct BytePayloadReader
             throw new ArgumentOutOfRangeException("Offset is out of bounds!");
 
         this._owner = owner;
-        this.Position = offset;
+        this.Position = skipHeader ? 1 + offset : offset;
         this.BytesRead = 0;
     }
 

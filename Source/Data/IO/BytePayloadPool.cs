@@ -4,6 +4,7 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using System.Buffers;
 using System.Collections.Concurrent;
 using EppNet.Node;
 
@@ -11,15 +12,18 @@ public class BytePayloadPool : INodeDescendant
 {
     public NetworkNode Node { get; }
 
+    public ArrayPool<byte> ArrayPool { get; }
+
     public int DefaultCapacity { get; }
 
     private readonly ConcurrentBag<BytePayload> _pool;
 
     public IResizeStrategy ResizeStrategy { get; }
 
-    internal BytePayloadPool(NetworkNode node, int defaultCapacity = 1024)
+    internal BytePayloadPool(NetworkNode node, ArrayPool<byte> pool = null, int defaultCapacity = 1024)
     {
         this.Node = node;
+        this.ArrayPool = (pool is null) ? ArrayPool<byte>.Shared : pool;
         this.DefaultCapacity = defaultCapacity;
         this.ResizeStrategy = new ExponentialResizeStrategy();
         this._pool = new();
