@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Data;
+using EppNet.Connections;
 
 public interface ITransportPeer : IDataHolder
 {
@@ -43,5 +44,7 @@ public interface ITransportPeer : IDataHolder
     /// Whether or not this peer is connected
     /// </summary>
     bool IsConnected { get; }
+
+    void Disconnect(DisconnectReason disconnectReason);
 
 }

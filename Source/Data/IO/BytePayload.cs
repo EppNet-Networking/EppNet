@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using System;
+using System.Runtime.CompilerServices;
 
 public sealed class BytePayload : IDisposable
 {
@@ -22,6 +23,7 @@ public sealed class BytePayload : IDisposable
     public bool IsPooled { internal set; get; }
 
     public IResizeStrategy ResizeStrategy;
+
     private readonly BytePayloadPool _pool;
 
     internal BytePayload(BytePayloadPool pool, int capacity)
@@ -48,12 +50,25 @@ public sealed class BytePayload : IDisposable
         this.ResizeStrategy = resizeStrategy ?? throw new ArgumentNullException(nameof(resizeStrategy));
     }
 
-    public Span<byte> AsSpan() =>
-        new(Buffer, 0, Length);
+    public Span<byte> AsSpan()
+    {
+        Touch();
+        return new(Buffer, 0, Length);
+    }
 
-    public ReadOnlySpan<byte> AsReadOnlySpan() =>
-        new(Buffer, 0, Length);
+    public ReadOnlySpan<byte> AsReadOnlySpan()
+    {
+        Touch();
+        return new(Buffer, 0, Length);
+    }
 
+    public Memory<byte> AsMemory()
+    {
+        Touch();
+        return new(Buffer, 0, Length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void EnsureCapacity(int neededBytes, bool exact = false)
     {
         LastUse = DateTime.Now;
@@ -69,6 +84,7 @@ public sealed class BytePayload : IDisposable
         Resize(newSize);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Resize(int newSize)
     {
         if (IsDestroyed || newSize <= Capacity)
@@ -107,7 +123,7 @@ public sealed class BytePayload : IDisposable
             this.IsPooled = true;
         }
     }
-    
+
     /// <summary>
     /// Destroys this payload and frees it memory. It is no longer capable of being pooled.
     /// </summary>
@@ -124,16 +140,23 @@ public sealed class BytePayload : IDisposable
         }
     }
 
+    /// <summary>
+    /// Updates tracking
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void Touch()
+    {
+        this.LastUse = DateTime.Now;
+    }
+
 }
 
 public ref struct BytePayloadWriter
 {
 
-    public int Position
-    {
-        internal set;
-        get;
-    }
+    public int Position { internal set; get; }
+
+    public int BytesWritten { internal set; get; }
 
     private readonly BytePayload _owner;
 
@@ -144,6 +167,7 @@ public ref struct BytePayloadWriter
 
         this._owner = owner;
         this.Position = 0;
+        this.BytesWritten = 0;
     }
 
     public BytePayloadWriter(BytePayload owner, int offset)
@@ -156,26 +180,34 @@ public ref struct BytePayloadWriter
 
         this._owner = owner;
         this.Position = offset;
+        this.BytesWritten = 0;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteByte(byte value)
     {
-        #if DEBUG
+#if DEBUG
         if (_owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
-        #endif
-        
+#endif
+
         _owner.EnsureCapacity(1);
         _owner.Buffer[Position++] = value;
+        _owner.Touch();
+
         _owner.Length++;
+
+        // Update bytes written
+        BytesWritten++;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteBytes(ReadOnlySpan<byte> data)
     {
-        #if DEBUG
+#if DEBUG
         if (_owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
-        #endif
+#endif
 
         _owner.EnsureCapacity(data.Length);
         data.CopyTo(new Span<byte>(_owner.Buffer, Position, data.Length));
@@ -183,25 +215,45 @@ public ref struct BytePayloadWriter
 
         // Update buffer length and last use
         _owner.Length = Math.Max(Position, _owner.Length);
-        _owner.LastUse = DateTime.Now;
+        _owner.Touch();
+
+        BytesWritten += data.Length;
     }
 
-    public Span<byte> Reserve(int count)
+    /// <summary>
+    /// Reserves the specified number of bytes for writing<br/>
+    /// This advances the writer and updates the number of bytes written immediately
+    /// </summary>
+    /// <param name="bytes"></param>
+    /// <returns></returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<byte> Reserve(int bytes)
     {
-        #if DEBUG
+#if DEBUG
         if (_owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
-        #endif
-        
-        _owner.EnsureCapacity(count);
-        Span<byte> slice = new(_owner.Buffer, Position, count);
-        Position += count;
+#endif
+
+        _owner.EnsureCapacity(bytes);
+        Span<byte> slice = new(_owner.Buffer, Position, bytes);
+        Position += bytes;
+        BytesWritten += bytes;
 
         // Update buffer length and last use
         _owner.Length = Math.Max(Position, _owner.Length);
-        _owner.LastUse = DateTime.Now;
+        _owner.Touch();
         return slice;
     }
+
+    /// <summary>
+    /// Advances the current position of the buffer by the specified number of bytes
+    /// </summary>
+    /// <param name="bytes"></param>
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Advance(int bytes) =>
+        Position = Math.Min(Position + bytes, _owner.Length);
 
 }
 
@@ -209,6 +261,11 @@ public ref struct BytePayloadReader
 {
 
     public int Position { internal set; get; }
+
+    public readonly int Remaining => _owner.Length - Position;
+    public readonly bool HasRemaining => Remaining > 0;
+
+    public int BytesRead { internal set; get; }
 
     private readonly BytePayload _owner;
 
@@ -219,6 +276,7 @@ public ref struct BytePayloadReader
 
         this._owner = owner;
         this.Position = 0;
+        this.BytesRead = 0;
     }
 
     public BytePayloadReader(BytePayload owner, int offset)
@@ -231,32 +289,82 @@ public ref struct BytePayloadReader
 
         this._owner = owner;
         this.Position = offset;
+        this.BytesRead = 0;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryPeekByte(out byte value)
+    {
+        if (_owner.IsDestroyed || !HasRemaining)
+        {
+            value = default;
+            return false;
+        }
+
+        value = _owner.Buffer[Position];
+        _owner.Touch();
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryReadByte(out byte value)
+    {
+        if (_owner.IsDestroyed || !HasRemaining)
+        {
+            value = default;
+            return false;
+        }
+
+        value = _owner.Buffer[Position++];
+        _owner.Touch();
+        BytesRead++;
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte ReadByte()
     {
-        #if DEBUG
+#if DEBUG
         if (_owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
 
         if (Position >= _owner.Length)
             throw new IndexOutOfRangeException("Attempted to read beyond buffer length!");
-        #endif
-        return _owner.Buffer[Position++];
+#endif
+
+        byte value = _owner.Buffer[_Position++];
+        _owner.Touch();
+
+        BytesRead++;
+
+        return value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<byte> ReadBytes(int count)
     {
-        #if DEBUG
+#if DEBUG
         if (_owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
 
         if (Position + count > _owner.Length)
             throw new IndexOutOfRangeException("Attempted to read beyond buffer length!");
-        #endif
+#endif
         ReadOnlySpan<byte> span = new(_owner.Buffer, Position, count);
         Position += count;
+        BytesRead += count;
+
+        _owner.Touch();
         return span;
     }
+
+    /// <summary>
+    /// Advances the current position of the buffer by the specified number of bytes
+    /// </summary>
+    /// <param name="bytes"></param>
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Advance(int bytes) =>
+        Position = Math.Min(Position + bytes, _owner.Length);
 
 }
