@@ -23,10 +23,9 @@ namespace EppNet.Data
         public FloatResolver() : base(sizeof(int)) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override ReadResult _Internal_Read(BytePayload payload, out float output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out float output)
         {
-            Span<byte> buffer = stackalloc byte[Size];
-            int read = payload.Stream.Read(buffer);
+            ReadOnlySpan<byte> buffer = reader.ReadBytes(Size);
             
             bool didRead = BinaryPrimitives.TryReadInt32LittleEndian(buffer, out int i32);
             output = didRead ? (float)(i32 * BytePayload.PrecisionReturnDecimalPlaces) : float.NaN;
@@ -34,11 +33,12 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, float input)
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, float input)
         {
             double rounded = input.Round(BytePayload.FloatPrecision);
             int i32 = (int)(rounded * BytePayload.PrecisionDecimalPlaces);
-            return BinaryPrimitives.TryWriteInt32LittleEndian(payload.Stream.GetSpan(Size), i32);
+
+            return BinaryPrimitives.TryWriteInt32LittleEndian(writer.Reserve(Size, clear: false), i32);
         }
 
     }
@@ -52,8 +52,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="input"></param>
 
-        public static void Write(this BytePayload payload, float input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, float input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the provided float array as a signed 32-bit integer array to the stream.
@@ -61,8 +61,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, float[] input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, float[] input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the provided float array as a signed 32-bit integer array to the stream.
@@ -70,8 +70,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, float[] input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, float[] input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a provided float input as a 32-bit integer.<br/>
@@ -79,8 +79,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="input"></param>
 
-        public static void WriteSingle(this BytePayload payload, float input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void WriteSingle(this ref BytePayloadWriter writer, float input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the provided float array as a signed 32-bit integer array to the stream.
@@ -88,8 +88,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteSingleArray(this BytePayload payload, float[] input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void WriteSingleArray(this ref BytePayloadWriter writer, float[] input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a provided float input as a 32-bit integer.<br/>
@@ -97,8 +97,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="input"></param>
 
-        public static void WriteFloat(this BytePayload payload, float input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void WriteFloat(this ref BytePayloadWriter writer, float input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the provided float array as a signed 32-bit integer array to the stream.
@@ -106,8 +106,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteFloatArray(this BytePayload payload, float[] input)
-            => FloatResolver.Instance.Write(payload, input);
+        public static void WriteFloatArray(this ref BytePayloadWriter writer, float[] input)
+            => FloatResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a float from the stream.<br/>
@@ -115,9 +115,9 @@ namespace EppNet.Data
         /// </summary>
         /// <returns><see cref="float.NaN"/> is returned if reading failed</returns>
 
-        public static float ReadSingle(this BytePayload payload)
+        public static float ReadSingle(this ref BytePayloadReader reader)
         {
-            FloatResolver.Instance.Read(payload, out float output);
+            FloatResolver.Instance.Read(ref reader, out float output);
             return output;
         }
 
@@ -127,9 +127,9 @@ namespace EppNet.Data
         /// Floats are sent with the precision specified by <see cref="BytePayload.FloatPrecision"/>
         /// </summary>
         /// <returns><see cref="float.NaN"/> is provided for each element that failed to be read</returns>
-        public static float[] ReadSingleArray(this BytePayload payload)
+        public static float[] ReadSingleArray(this ref BytePayloadReader reader)
         {
-            FloatResolver.Instance.Read(payload, out float[] output);
+            FloatResolver.Instance.Read(ref reader, out float[] output);
             return output;
         }
 
@@ -139,9 +139,9 @@ namespace EppNet.Data
         /// </summary>
         /// <returns><see cref="float.NaN"/> is returned if reading failed</returns>
 
-        public static float ReadFloat(this BytePayload payload)
+        public static float ReadFloat(this ref BytePayloadReader reader)
         {
-            FloatResolver.Instance.Read(payload, out float output);
+            FloatResolver.Instance.Read(ref reader, out float output);
             return output;
         }
 
@@ -151,9 +151,9 @@ namespace EppNet.Data
         /// Floats are sent with the precision specified by <see cref="BytePayload.FloatPrecision"/>
         /// </summary>
         /// <returns><see cref="float.NaN"/> is provided for each element that failed to be read</returns>
-        public static float[] ReadFloatArray(this BytePayload payload)
+        public static float[] ReadFloatArray(this ref BytePayloadReader reader)
         {
-            FloatResolver.Instance.Read(payload, out float[] output);
+            FloatResolver.Instance.Read(ref reader, out float[] output);
             return output;
         }
 

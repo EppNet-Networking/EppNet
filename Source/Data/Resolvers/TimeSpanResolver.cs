@@ -8,6 +8,7 @@ using EppNet.Attributes;
 
 using System;
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace EppNet.Data
 {
@@ -19,21 +20,17 @@ namespace EppNet.Data
 
         public TimeSpanResolver() : base(sizeof(long)) { }
 
-        protected override ReadResult _Internal_Read(BytePayload payload, out TimeSpan output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out TimeSpan output)
         {
-            Span<byte> buffer = stackalloc byte[Size];
-            int read = payload.Stream.Read(buffer);
-            long ticks = 0;
-
-            ReadResult result = BinaryPrimitives.TryReadInt64LittleEndian(buffer, out ticks)
+            ReadResult result = BinaryPrimitives.TryReadInt64LittleEndian(reader.ReadBytes(Size), out long ticks)
                 ? ReadResult.Success : ReadResult.Failed;
 
             output = TimeSpan.FromTicks(ticks);
             return result;
         }
 
-        protected override bool _Internal_Write(BytePayload payload, TimeSpan input)
-            => BinaryPrimitives.TryWriteInt64LittleEndian(payload.Stream.GetSpan(Size), input.Ticks);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, TimeSpan input) =>
+            BinaryPrimitives.TryWriteInt64LittleEndian(writer.Reserve(Size, clear: false), input.Ticks);
     }
 
     public static class TimeSpanResolverExtensions
@@ -46,8 +43,8 @@ namespace EppNet.Data
         /// <param name="payload"></param>
         /// <param name="input"></param>
 
-        public static void Write(this BytePayload payload, TimeSpan input)
-            => TimeSpanResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, TimeSpan input)
+            => TimeSpanResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an array of <see cref="TimeSpan"/> to the wire.<br/>
@@ -55,8 +52,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, TimeSpan[] input)
-            => TimeSpanResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, TimeSpan[] input)
+            => TimeSpanResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an array of <see cref="TimeSpan"/> to the wire.<br/>
@@ -64,17 +61,17 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, TimeSpan[] input)
-            => TimeSpanResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, TimeSpan[] input)
+            => TimeSpanResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a <see cref="TimeSpan"/> from the wire.<br/>
         /// </summary>
         /// <param name="payload"></param>
 
-        public static TimeSpan Read(this BytePayload payload)
+        public static TimeSpan Read(this ref BytePayloadReader reader)
         {
-            TimeSpanResolver.Instance.Read(payload, out TimeSpan result);
+            TimeSpanResolver.Instance.Read(ref reader, out TimeSpan result);
             return result;
         }
 
@@ -83,9 +80,9 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
 
-        public static TimeSpan[] ReadArray(this BytePayload payload)
+        public static TimeSpan[] ReadArray(this ref BytePayloadReader reader)
         {
-            TimeSpanResolver.Instance.Read(payload, out TimeSpan[] result);
+            TimeSpanResolver.Instance.Read(ref reader, out TimeSpan[] result);
             return result;
         }
     }

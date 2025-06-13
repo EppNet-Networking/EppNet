@@ -4,6 +4,8 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Utilities;
+
 using System;
 using System.Runtime.CompilerServices;
 
@@ -14,19 +16,16 @@ namespace EppNet.Data
     public struct QuaternionAdapter
     {
 
-        /// <summary>
-        /// Magic number for quaternion quantization
-        /// </summary>
-        public const float ByteQuantizer = 127.5f;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static QuaternionAdapter Normalize(QuaternionAdapter quat)
-            => new(
-                quat.X / quat.Length(),
-                quat.Y / quat.Length(),
-                quat.Z / quat.Length(),
-                quat.W / quat.Length()
-            );
+        {
+            float len = quat.Length();
+            return (len < FastMath.Epsilon) ? new(0, 0, 0, 1) : new(
+                quat.X / len,
+                quat.Y / len,
+                quat.Z / len,
+                quat.W / len);
+        }
 
         /// <summary>
         /// Maps a floating point number from [-1, 1] to [0, 255]<br/>
@@ -36,7 +35,7 @@ namespace EppNet.Data
         /// <returns>Byte in domain [0, 255]</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte Quantize(float input)
-            => (byte)MathF.Round((input + 1.0f) * ByteQuantizer);
+            => (byte)MathF.Round((input + 1.0f) * FastMath.ByteQuantizer);
 
         /// <summary>
         /// Maps a byte value from [0, 255] back to [-1, 1]
@@ -44,24 +43,19 @@ namespace EppNet.Data
         /// <param name="input"></param>
         /// <returns>Float in domain [-1, 1]</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Dequantize(byte input)
-            => (input / ByteQuantizer) - 1.0f;
+        public static float Dequantize(byte input) =>
+            FastMath.Dequantize(input);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static QuaternionAdapter Quantized(QuaternionAdapter input)
         {
             QuaternionAdapter result = Normalize(input);
-            Span<float> floats = stackalloc float[4];
-            floats[0] = result.X;
-            floats[1] = result.Y;
-            floats[2] = result.Z;
-            floats[3] = result.W;
 
-            for (int i = 0; i < floats.Length; i++)
-                floats[i] = Quantize(floats[i]);
-
-            return new QuaternionAdapter(floats[0], floats[1],
-                floats[2], floats[3]);
+            return new QuaternionAdapter(
+                Quantize(result.X),
+                Quantize(result.Y),
+                Quantize(result.Z),
+                Quantize(result.W));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -111,6 +105,13 @@ namespace EppNet.Data
             this.Y = y;
             this.Z = z;
             this.W = w;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool ApproximatelyEquals(QuaternionAdapter other, float tolerance = FastMath.Epsilon)
+        {
+            float dot = (X * other.X) + (Y * other.Y) + (Z * other.Z) + (W * other.W);
+            return MathF.Abs(dot) > 1f - tolerance;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

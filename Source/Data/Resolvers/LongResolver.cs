@@ -6,7 +6,6 @@
 
 using EppNet.Attributes;
 
-using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
@@ -20,18 +19,13 @@ namespace EppNet.Data
         public static readonly LongResolver Instance = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override ReadResult _Internal_Read(BytePayload payload, out long output)
-        {
-            Span<byte> buffer = stackalloc byte[Size];
-            int read = payload.Stream.Read(buffer);
-
-            return BinaryPrimitives.TryReadInt64LittleEndian(buffer, out output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out long output) =>
+            BinaryPrimitives.TryReadInt64LittleEndian(reader.ReadBytes(Size), out output)
                 ? ReadResult.Success : ReadResult.Failed;
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, long input)
-            => BinaryPrimitives.TryWriteInt64LittleEndian(payload.Stream.GetSpan(Size), input);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, long input) =>
+            BinaryPrimitives.TryWriteInt64LittleEndian(writer.Reserve(Size, clear: false), input);
 
     }
 
@@ -42,62 +36,62 @@ namespace EppNet.Data
         /// Writes a signed 64-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, long input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, long input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, long[] input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, long[] input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, long[] input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, long[] input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteLong(this BytePayload payload, long input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void WriteLong(this ref BytePayloadWriter writer, long input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteLongArray(this BytePayload payload, long[] input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void WriteLongArray(this ref BytePayloadWriter writer, long[] input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt64(this BytePayload payload, long input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void WriteInt64(this ref BytePayloadWriter writer, long input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteInt64Array(this BytePayload payload, long[] input)
-            => LongResolver.Instance.Write(payload, input);
+        public static void WriteInt64Array(this ref BytePayloadWriter writer, long[] input)
+            => LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 64-bit integer from the stream.
         /// </summary>
 
-        public static long ReadLong(this BytePayload payload)
+        public static long ReadLong(this ref BytePayloadReader reader)
         {
-            LongResolver.Instance.Read(payload, out long output);
+            LongResolver.Instance.Read(ref reader, out long output);
             return output;
         }
 
@@ -105,27 +99,27 @@ namespace EppNet.Data
         /// Reads a signed 64-bit integer array from the stream.
         /// </summary>
 
-        public static long[] ReadLongArray(this BytePayload payload)
+        public static long[] ReadLongArray(this ref BytePayloadReader reader)
         {
-            LongResolver.Instance.Read(payload, out long[] output);
+            LongResolver.Instance.Read(ref reader, out long[] output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 64-bit integer from the stream.
         /// </summary>
-        public static long ReadInt64(this BytePayload payload)
+        public static long ReadInt64(this ref BytePayloadReader reader)
         {
-            LongResolver.Instance.Read(payload, out long output);
+            LongResolver.Instance.Read(ref reader, out long output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 64-bit integer array from the stream.
         /// </summary>
-        public static long[] ReadInt64Array(this BytePayload payload)
+        public static long[] ReadInt64Array(this ref BytePayloadReader reader)
         {
-            LongResolver.Instance.Read(payload, out long[] output);
+            LongResolver.Instance.Read(ref reader, out long[] output);
             return output;
         }
 

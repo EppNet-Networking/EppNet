@@ -4,6 +4,8 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Utilities;
+
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -11,6 +13,8 @@ using System.Runtime.CompilerServices;
 [DebuggerDisplay("Capacity = {Capacity}, Length = {Length}, IsPooled = {IsPooled}")]
 public sealed class BytePayload : IDisposable
 {
+
+    public const int HeaderOffset = 1;
 
     public int Capacity { internal set; get; }
 
@@ -26,6 +30,36 @@ public sealed class BytePayload : IDisposable
 
     public IResizeStrategy ResizeStrategy;
 
+    /// <summary>
+    /// The decimal precision of floating point numbers.
+    /// </summary>
+    public static int FloatPrecision = 4;
+
+    public static double PrecisionDecimalPlaces
+    {
+        get
+        {
+            if (_precisionDecimalPlaces == 0)
+                _precisionDecimalPlaces = FastMath.GetTenPow(FloatPrecision);
+
+            return _precisionDecimalPlaces;
+        }
+    }
+
+    private static double _precisionDecimalPlaces = 0d;
+
+    public static double PrecisionReturnDecimalPlaces
+    {
+        get
+        {
+            if (_precisionReturnDecimalPlaces == 0)
+                _precisionReturnDecimalPlaces = 1 / PrecisionDecimalPlaces;
+
+            return _precisionReturnDecimalPlaces;
+        }
+    }
+
+    private static double _precisionReturnDecimalPlaces = 0d;
     public byte Header
     {
         set
@@ -37,16 +71,19 @@ public sealed class BytePayload : IDisposable
     }
 
     private readonly BytePayloadPool _pool;
+    internal readonly int _poolId;
 
     /// <summary>
-    /// Creates a payload that makes use of the specified <see cref="BytePayloadPool"/>
+    /// Creates a payload that makes use of the specified <see cref="BytePayloadPool"/>.<br/>
+    /// The capacity parameter ensures that this buffer has the exact number of bytes available.
     /// </summary>
     /// <param name="pool"></param>
     /// <param name="capacity"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    internal BytePayload(BytePayloadPool pool, int capacity)
+    internal BytePayload(BytePayloadPool pool, int poolId, int capacity)
     {
         this._pool = pool ?? throw new ArgumentNullException(nameof(pool));
+        this._poolId = poolId;
 
         this.IsDestroyed = IsPooled = false;
         this.Capacity = capacity;
@@ -66,6 +103,7 @@ public sealed class BytePayload : IDisposable
     internal BytePayload(IResizeStrategy resizeStrategy, int capacity)
     {
         this._pool = null;
+        this._poolId = -1;
 
         this.IsDestroyed = IsPooled = false;
         this.Capacity = capacity;
@@ -199,18 +237,42 @@ public ref struct BytePayloadWriter
 
     private readonly BytePayload _owner;
 
+    /// <summary>
+    /// Creates a new writer for the specified <see cref="BytePayload"/>.
+    /// </summary>
+    /// <param name="owner">The payload to write to</param>
+    /// <param name="reserveHeader">Whether or not to start after the <see cref="BytePayload.HeaderOffset"/></param>
+    /// <exception cref="ArgumentNullException">Tried to create a writer for a null payload</exception>
+    /// <exception cref="ObjectDisposedException">Tried to create a writer for a destroyed payload</exception>
+
     public BytePayloadWriter(BytePayload owner, bool reserveHeader = true)
     {
+        if (owner is null)
+            throw new ArgumentNullException(nameof(owner));
+
         if (owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
 
         this._owner = owner;
-        this.Position = reserveHeader ? 1 : 0;
+        this.Position = reserveHeader ? BytePayload.HeaderOffset : 0;
         this.BytesWritten = 0;
     }
 
+    /// <summary>
+    /// Creates a new writer for the specified <see cref="BytePayload"/>.
+    /// </summary>
+    /// <param name="owner">The payload to write to</param>
+    /// <param name="offset">The offset in bytes to begin writing from</param>
+    /// <param name="reserveHeader">If enabled, offsets the beginning by the <see cref="BytePayload.HeaderOffset"/> in bytes</param>
+    /// <exception cref="ArgumentNullException">Tried to create a writer for a null payload</exception>
+    /// <exception cref="ObjectDisposedException">Tried to create a writer for a destroyed payload</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Tried to set the offset to a number out of range of the buffer</exception>
+
     public BytePayloadWriter(BytePayload owner, int offset, bool reserveHeader = true)
     {
+        if (owner is null)
+            throw new ArgumentNullException(nameof(owner));
+
         if (owner.IsDestroyed)
             throw new ObjectDisposedException("BytePayload has been disposed!");
 
@@ -218,9 +280,72 @@ public ref struct BytePayloadWriter
             throw new ArgumentOutOfRangeException("Offset is out of bounds!");
 
         this._owner = owner;
-        this.Position = reserveHeader ? 1 + offset : offset;
+        this.Position = reserveHeader ? BytePayload.HeaderOffset + offset : offset;
         this.BytesWritten = 0;
     }
+
+    /// <summary>
+    /// Tries to write the specified byte to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryWriteByte(byte value)
+    {
+        if (_owner.IsDestroyed)
+            return false;
+
+        _owner.EnsureCapacity(1);
+        _owner.Buffer[Position++] = value;
+        _owner.Touch();
+
+        _owner.Length = Math.Max(_owner.Length, Position);
+
+        // Update bytes written
+        BytesWritten++;
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to write the specified byte to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryWrite(byte value) =>
+        TryWriteByte(value);
+
+    /// <summary>
+    /// Tries to write the specified span to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryWriteBytes(Span<byte> data)
+    {
+        if (_owner.IsDestroyed)
+            return false;
+
+        _owner.EnsureCapacity(data.Length);
+        data.CopyTo(new Span<byte>(_owner.Buffer, Position, data.Length));
+        Position += data.Length;
+
+        // Update buffer length and last use
+        _owner.Length = Math.Max(_owner.Length, Position);
+        _owner.Touch();
+
+        BytesWritten += data.Length;
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to write the specified span to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryWrite(Span<byte> data) =>
+        TryWriteBytes(data);
 
     /// <summary>
     /// Writes the specified byte to the buffer
@@ -352,18 +477,42 @@ public ref struct BytePayloadReader
 
     private readonly BytePayload _owner;
 
+    /// <summary>
+    /// Creates a new reader for the specified <see cref="BytePayload"/>.
+    /// </summary>
+    /// <param name="owner">The payload to read from</param>
+    /// <param name="reserveHeader">Whether or not to start after the <see cref="BytePayload.HeaderOffset"/></param>
+    /// <exception cref="ArgumentNullException">Tried to create a reader for a null payload</exception>
+    /// <exception cref="ObjectDisposedException">Tried to create a reader for a destroyed payload</exception>
+
     public BytePayloadReader(BytePayload owner, bool skipHeader = true)
     {
+        if (owner is null)
+            throw new ArgumentNullException(nameof(owner));
+
         if (owner.IsDestroyed)
             throw new ObjectDisposedException(nameof(owner));
 
         this._owner = owner;
-        this.Position = skipHeader ? 1 : 0;
+        this.Position = skipHeader ? BytePayload.HeaderOffset : 0;
         this.BytesRead = 0;
     }
 
+    /// <summary>
+    /// Creates a new reader for the specified <see cref="BytePayload"/>.
+    /// </summary>
+    /// <param name="owner">The payload to read from</param>
+    /// <param name="offset">The offset in bytes to begin reading from</param>
+    /// <param name="reserveHeader">If enabled, offsets the beginning by the <see cref="BytePayload.HeaderOffset"/> in bytes</param>
+    /// <exception cref="ArgumentNullException">Tried to create a reader for a null payload</exception>
+    /// <exception cref="ObjectDisposedException">Tried to create a reader for a destroyed payload</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Tried to set the offset to a number out of range of the buffer</exception>
+
     public BytePayloadReader(BytePayload owner, int offset, bool skipHeader = true)
     {
+        if (owner is null)
+            throw new ArgumentNullException(nameof(owner));
+
         if (owner.IsDestroyed)
             throw new ObjectDisposedException(nameof(owner));
 
@@ -371,7 +520,7 @@ public ref struct BytePayloadReader
             throw new ArgumentOutOfRangeException("Offset is out of bounds!");
 
         this._owner = owner;
-        this.Position = skipHeader ? 1 + offset : offset;
+        this.Position = skipHeader ? BytePayload.HeaderOffset + offset : offset;
         this.BytesRead = 0;
     }
 
@@ -528,6 +677,37 @@ public ref struct BytePayloadReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRead(out byte value) =>
         TryReadByte(out value);
+
+    /// <summary>
+    /// Tries to read the specified number of bytes at the current position<br/>
+    /// </summary>
+    /// <returns>The bytes read</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryReadBytes(int count, out ReadOnlySpan<byte> data)
+    {
+        if (_owner.IsDestroyed || Position + count > _owner.Length)
+        {
+            data = default;
+            return false;
+        }
+
+        data = new(_owner.Buffer, Position, count);
+        Position += count;
+        BytesRead += count;
+
+        _owner.Touch();
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to read the specified number of bytes at the current position<br/>
+    /// </summary>
+    /// <returns>The bytes read</returns>
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryRead(int count, out ReadOnlySpan<byte> data) =>
+        TryReadBytes(count, out data);
 
     /// <summary>
     /// Reads the byte at the current position<br/>

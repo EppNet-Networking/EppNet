@@ -19,18 +19,18 @@ namespace EppNet.Data
         public static BoolResolver Instance = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override ReadResult _Internal_Read(BytePayload payload, out bool output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out bool output)
         {
-            int result = payload.Stream.ReadByte();
-            output = ((byte)result == 1);
+            bool read = reader.TryReadByte(out byte result);
+            output = result == 1;
 
-            return result == -1 ? ReadResult.Failed : ReadResult.Success;
+            return read ? ReadResult.Success : ReadResult.Failed;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, bool input)
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, bool input)
         {
-            payload.Stream.WriteByte(input ? (byte) 1 : (byte) 0);
+            writer.WriteByte(input ? (byte) 1 : (byte) 0);
             return true;
         }
     }
@@ -42,51 +42,51 @@ namespace EppNet.Data
         /// Writes an unsigned 8-bit integer to the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, bool input)
-            => BoolResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, bool input)
+            => BoolResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, bool[] input)
-            => BoolResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, bool[] input)
+            => BoolResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static void Write<TCollection>(this BytePayload payload, TCollection input) where TCollection : ICollection<bool>
-            => BoolResolver.Instance.Write(payload, input);
+        public static void Write<TCollection>(this ref BytePayloadWriter writer, TCollection input) where TCollection : ICollection<bool>
+            => BoolResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, bool[] input)
-            => BoolResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, bool[] input)
+            => BoolResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer to the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteBool(this BytePayload payload, bool input)
-            => BoolResolver.Instance.Write(payload, input);
+        public static void WriteBool(this ref BytePayloadWriter writer, bool input)
+            => BoolResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteBoolArray(this BytePayload payload, bool[] input)
-            => BoolResolver.Instance.Write(payload, input);
+        public static void WriteBoolArray(this ref BytePayloadWriter writer, bool[] input)
+            => BoolResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads an unsigned 8-bit integer collection from the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static TCollection Read<TCollection>(this BytePayload payload) where TCollection : class, ICollection<bool>, new()
+        public static TCollection Read<TCollection>(this ref BytePayloadReader reader) where TCollection : class, ICollection<bool>, new()
         {
-            BoolResolver.Instance.Read(payload, out TCollection output);
+            BoolResolver.Instance.Read(ref reader, out TCollection output);
             return output;
         }
 
@@ -94,9 +94,9 @@ namespace EppNet.Data
         /// Reads an unsigned 8-bit integer from the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static bool ReadBool(this BytePayload payload)
+        public static bool ReadBool(this ref BytePayloadReader reader)
         {
-            BoolResolver.Instance.Read(payload, out bool output);
+            BoolResolver.Instance.Read(ref reader, out bool output);
             return output;
         }
 
@@ -104,12 +104,11 @@ namespace EppNet.Data
         /// Reads an unsigned 8-bit integer array from the stream denoting 1 (true) or 0 (false).
         /// </summary>
         /// <param name="input"></param>
-        public static bool[] ReadBoolArray(this BytePayload payload)
+        public static bool[] ReadBoolArray(this ref BytePayloadReader reader)
         {
-            BoolResolver.Instance.Read(payload, out bool[] output);
+            BoolResolver.Instance.Read(ref reader, out bool[] output);
             return output;
         }
-
 
     }
 

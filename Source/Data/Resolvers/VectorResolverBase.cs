@@ -159,39 +159,37 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool WriteArray(BytePayload payload, T[] input, bool absolute = true)
+        public virtual bool WriteArray(ref BytePayloadWriter writer, T[] input, bool absolute = true)
         {
-            payload.EnsureReadyToWrite();
-
             if (input == null)
             {
-                ByteResolver.Instance.Write(payload, IResolver.NullArrayHeader);
+                ByteResolver.Instance.Write(ref writer, IResolver.NullArrayHeader);
                 return true;
             }
             else if (input.Length == 0)
             {
-                ByteResolver.Instance.Write(payload, IResolver.EmptyArrayHeader);
+                ByteResolver.Instance.Write(ref writer, IResolver.EmptyArrayHeader);
                 return true;
             }
 
-            IResolver._Internal_WriteHeaderAndLength(payload, input.Length);
+            IResolver._Internal_WriteHeaderAndLength(ref writer, input.Length);
             bool written = true;
 
-            for (int i = 0; i < NumComponents; i++)
+            for (int i = 0; i < input.Length; i++)
             {
                 if (!written)
                     break;
 
-                written = Write(payload, input[i], absolute);
+                written = Write(ref writer, input[i], absolute);
 
                 if (written && AutoAdvance)
-                    payload.Advance(Size);
+                    writer.Advance(Size);
             }
 
             return written;
         }
 
-        public bool Write(BytePayload payload, T input, bool absolute = true)
+        public bool Write(ref BytePayloadWriter writer, T input, bool absolute = true)
         {
             byte header = 0;
             if (input.Equals(Default) ||
@@ -222,7 +220,7 @@ namespace EppNet.Data
                     header = UnitWHeader;
 
                 header |= (byte)(absolute ? 128 : 0);
-                payload.Stream.WriteByte(header);
+                writer.WriteByte(header);
                 return true;
             }
 
@@ -249,7 +247,7 @@ namespace EppNet.Data
                 header |= shifted;
             }
 
-            ByteResolver.Instance.Write(payload, header);
+            ByteResolver.Instance.Write(ref writer, header);
 
             for (int i = 0; i < NumComponents; i++)
             {
@@ -260,10 +258,10 @@ namespace EppNet.Data
 
                 written = data.TypeIndex switch
                 {
-                    0 => SByteResolver.Instance.Write(payload, (sbyte)value),
-                    1 => ShortResolver.Instance.Write(payload, (short)value),
-                    2 => Int32Resolver.Instance.Write(payload, (int)value),
-                    _ => FloatResolver.Instance.Write(payload, value)
+                    0 => SByteResolver.Instance.Write(ref writer, (sbyte)value),
+                    1 => ShortResolver.Instance.Write(ref writer, (short)value),
+                    2 => Int32Resolver.Instance.Write(ref writer, (int)value),
+                    _ => FloatResolver.Instance.Write(ref writer, value)
                 };
 
                 if (!written)
@@ -273,15 +271,13 @@ namespace EppNet.Data
             return written;
         }
 
-        protected override ReadResult _Internal_Read(BytePayload payload, out T output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out T output)
         {
-            int result = payload.Stream.ReadByte();
+            bool read = reader.TryReadByte(out byte header);
             output = Default;
 
-            if (result == -1)
+            if (!read)
                 return ReadResult.Failed;
-
-            byte header = (byte)result;
 
             bool absolute = (header & 0b10000000) != 0;
             int typeIndex = header & 0b11;
@@ -317,10 +313,10 @@ namespace EppNet.Data
                 float value;
                 readResult = typeIndex switch
                 {
-                    0 => SByteResolver.Instance.ReadAs(payload, out value),
-                    1 => ShortResolver.Instance.ReadAs(payload, out value),
-                    2 => Int32Resolver.Instance.ReadAs(payload, out value),
-                    _ => FloatResolver.Instance.ReadAs(payload, out value)
+                    0 => SByteResolver.Instance.ReadAs(ref reader, out value),
+                    1 => ShortResolver.Instance.ReadAs(ref reader, out value),
+                    2 => Int32Resolver.Instance.ReadAs(ref reader, out value),
+                    _ => FloatResolver.Instance.ReadAs(ref reader, out value)
                 };
 
                 if (!readResult.IsSuccess())
@@ -335,8 +331,8 @@ namespace EppNet.Data
             return readResult;
         }
 
-        protected override bool _Internal_Write(BytePayload payload, T input)
-            => Write(payload, input, absolute: true);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, T input)
+            => Write(ref writer, input, absolute: true);
 
         public abstract T Put(T input, float value, int index);
 

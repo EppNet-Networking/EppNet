@@ -17,7 +17,17 @@ namespace EppNet.Utilities
         /// </summary>
         public const int CachedDecimals = 15;
 
+        public const int CachedDequantizedFloats = 256;
+
+        /// <summary>
+        /// Magic number for quaternion quantization
+        /// </summary>
+        public const float ByteQuantizer = 127.5f;
+
+        public const float Epsilon = 1e-6f;
+
         private static readonly double[] _roundLookup = CreateRoundLookup();
+        private static readonly float[] _dequantizeTable = CreateDequantizeLookup();
 
         /// <summary>
         /// Essentially a wrapper around <see cref="Math.Pow(double, double)"/> with 10^index<br/>
@@ -31,6 +41,16 @@ namespace EppNet.Utilities
                 return _roundLookup[index];
 
             return Math.Pow(10, index);
+        }
+
+        private static float[] CreateDequantizeLookup()
+        {
+            float[] result = new float[CachedDequantizedFloats];
+
+            for (int i = 0; i < CachedDequantizedFloats; i++)
+                result[i] = (i / ByteQuantizer) - 1.0f;
+
+            return result;
         }
 
         private static double[] CreateRoundLookup()
@@ -81,6 +101,9 @@ namespace EppNet.Utilities
 
             return result;
         }
+
+        public static float Dequantize(this byte b) =>
+            _dequantizeTable[b];
 
     }
 }

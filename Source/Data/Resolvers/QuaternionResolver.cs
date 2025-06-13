@@ -24,9 +24,11 @@ namespace EppNet.Data
             this.Identity = Quaternion.Identity;
         }
 
-        public override Quaternion FromAdapter(QuaternionAdapter adapter) => adapter;
+        public override Quaternion FromAdapter(QuaternionAdapter adapter) =>
+            adapter;
 
-        public override QuaternionAdapter ToAdapter(Quaternion input) => (QuaternionAdapter) input;
+        public override QuaternionAdapter ToAdapter(Quaternion input) =>
+            (QuaternionAdapter) input;
     }
 
     public static class QuaternionResolverExtensions
@@ -43,8 +45,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, Quaternion input)
-            => QuaternionResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, Quaternion input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an array of <see cref="Quaternion"/> to the stream<br/>
@@ -52,8 +54,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, Quaternion[] input)
-            => QuaternionResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, Quaternion[] input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an array of <see cref="Quaternion"/> to the stream<br/>
@@ -61,8 +63,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, Quaternion[] input)
-            => QuaternionResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, Quaternion[] input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a normalized <see cref="Quaternion"/> to the stream using the Smallest Three algorithm.<br/>
@@ -75,8 +77,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteQuat(this BytePayload payload, Quaternion input)
-            => QuaternionResolver.Instance.Write(payload, input);
+        public static void WriteQuat(this ref BytePayloadWriter writer, Quaternion input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an array of <see cref="Quaternion"/> to the stream<br/>
@@ -84,8 +86,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteQuatArray(this BytePayload payload, Quaternion[] input)
-            => QuaternionResolver.Instance.Write(payload, input);
+        public static void WriteQuatArray(this ref BytePayloadWriter writer, Quaternion[] input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a normalized <see cref="Quaternion"/> to the stream using the Smallest Three algorithm.<br/>
@@ -98,8 +100,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteQuaternion(this BytePayload payload, Quaternion input)
-            => QuaternionResolver.Instance.Write(payload, input);
+        public static void WriteQuaternion(this ref BytePayloadWriter writer, Quaternion input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an array of <see cref="Quaternion"/> to the stream<br/>
@@ -107,9 +109,8 @@ namespace EppNet.Data
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteQuaternionArray(this BytePayload payload, Quaternion[] input)
-            => QuaternionResolver.Instance.Write(payload, input);
-
+        public static void WriteQuaternionArray(this ref BytePayloadWriter writer, Quaternion[] input)
+            => QuaternionResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a normalized <see cref="Quaternion"/> from the stream.<br/>
@@ -119,9 +120,9 @@ namespace EppNet.Data
         /// <param name="payload"></param>
         /// <returns></returns>
 
-        public static Quaternion ReadQuat(this BytePayload payload)
+        public static Quaternion ReadQuat(this ref BytePayloadReader reader)
         {
-            QuaternionResolver.Instance.Read(payload, out Quaternion output);
+            QuaternionResolver.Instance.Read(ref reader, out Quaternion output);
             return output;
         }
 
@@ -133,9 +134,9 @@ namespace EppNet.Data
         /// <param name="payload"></param>
         /// <returns></returns>
 
-        public static Quaternion[] ReadQuatArray(this BytePayload payload)
+        public static Quaternion[] ReadQuatArray(this ref BytePayloadReader reader)
         {
-            QuaternionResolver.Instance.Read(payload, out Quaternion[] output);
+            QuaternionResolver.Instance.Read(ref reader, out Quaternion[] output);
             return output;
         }
 
@@ -147,9 +148,9 @@ namespace EppNet.Data
         /// <param name="payload"></param>
         /// <returns></returns>
 
-        public static Quaternion ReadQuaternion(this BytePayload payload)
+        public static Quaternion ReadQuaternion(this ref BytePayloadReader reader)
         {
-            QuaternionResolver.Instance.Read(payload, out Quaternion output);
+            QuaternionResolver.Instance.Read(ref reader, out Quaternion output);
             return output;
         }
 
@@ -161,9 +162,9 @@ namespace EppNet.Data
         /// <param name="payload"></param>
         /// <returns></returns>
 
-        public static Quaternion[] ReadQuaternionArray(this BytePayload payload)
+        public static Quaternion[] ReadQuaternionArray(this ref BytePayloadReader reader)
         {
-            QuaternionResolver.Instance.Read(payload, out Quaternion[] output);
+            QuaternionResolver.Instance.Read(ref reader, out Quaternion[] output);
             return output;
         }
 

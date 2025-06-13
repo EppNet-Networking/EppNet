@@ -6,7 +6,6 @@
 
 using EppNet.Attributes;
 
-using System;
 using System.Numerics;
 
 namespace EppNet.Data
@@ -80,8 +79,8 @@ namespace EppNet.Data
         /// <param name="absolute">Should ABSOLUTELY all components be transmitted?</param>
         /// <returns>Whether or not the Vector2 was written</returns>
 
-        public static bool Write(this BytePayload payload, Vector2 input, bool absolute = true)
-            => Vector2Resolver.Instance.Write(payload, input, absolute);
+        public static bool Write(this ref BytePayloadWriter writer, Vector2 input, bool absolute = true)
+            => Vector2Resolver.Instance.Write(ref writer, input, absolute);
 
         /// <summary>
         /// Writes a <see cref="Vector2"/> array to the stream.<br/><br/>
@@ -97,8 +96,8 @@ namespace EppNet.Data
         /// <param name="absolute">Should ABSOLUTELY all components be transmitted?</param>
         /// <returns>Whether or not the Vector2 array was written</returns>
 
-        public static bool Write(this BytePayload payload, Vector2[] input, bool absolute = true)
-            => Vector2Resolver.Instance.WriteArray(payload, input, absolute);
+        public static bool Write(this ref BytePayloadWriter writer, Vector2[] input, bool absolute = true)
+            => Vector2Resolver.Instance.WriteArray(ref writer, input, absolute);
 
         /// <summary>
         /// Writes a <see cref="Vector2"/> array to the stream.<br/><br/>
@@ -114,8 +113,8 @@ namespace EppNet.Data
         /// <param name="absolute">Should ABSOLUTELY all components be transmitted?</param>
         /// <returns>Whether or not the Vector2 array was written</returns>
 
-        public static bool WriteArray(this BytePayload payload, Vector2[] input, bool absolute = true)
-            => Vector2Resolver.Instance.WriteArray(payload, input, absolute);
+        public static bool WriteArray(this ref BytePayloadWriter writer, Vector2[] input, bool absolute = true)
+            => Vector2Resolver.Instance.WriteArray(ref writer, input, absolute);
 
         /// <summary>
         /// Writes a <see cref="Vector2"/> in <b>DELTA MODE</b> to the stream.<br/>
@@ -146,10 +145,10 @@ namespace EppNet.Data
         /// <param name="oldVector">The old vector</param>
         /// <returns>Whether or not the Vector2 was written</returns>
 
-        public static bool Write(this BytePayload payload, Vector2 newVector, Vector2 oldVector)
+        public static bool Write(this ref BytePayloadWriter writer, Vector2 newVector, Vector2 oldVector)
         {
             Vector2 delta = newVector - oldVector;
-            return Vector2Resolver.Instance.Write(payload, delta, absolute: false);
+            return Vector2Resolver.Instance.Write(ref writer, delta, absolute: false);
         }
 
         /// <summary>
@@ -182,8 +181,8 @@ namespace EppNet.Data
         /// <param name="absolute">Should ABSOLUTELY all components be transmitted?</param>
         /// <returns>Whether or not the Vector2 was written</returns>
 
-        public static bool WriteVector2(this BytePayload payload, Vector2 input, bool absolute = true)
-            => Vector2Resolver.Instance.Write(payload, input, absolute);
+        public static bool WriteVector2(this ref BytePayloadWriter writer, Vector2 input, bool absolute = true)
+            => Vector2Resolver.Instance.Write(ref writer, input, absolute);
 
         /// <summary>
         /// Writes a <see cref="Vector2"/> in <b>DELTA MODE</b> to the stream.<br/>
@@ -214,10 +213,10 @@ namespace EppNet.Data
         /// <param name="oldVector">The old vector</param>
         /// <returns>Whether or not the Vector2 was written</returns>
 
-        public static bool WriteVector2(this BytePayload payload, Vector2 newVector, Vector2 oldVector)
+        public static bool WriteVector2(this ref BytePayloadWriter writer, Vector2 newVector, Vector2 oldVector)
         {
             Vector2 delta = newVector - oldVector;
-            return Vector2Resolver.Instance.Write(payload, delta, absolute: false);
+            return Vector2Resolver.Instance.Write(ref writer, delta, absolute: false);
         }
 
         /// <summary>
@@ -230,9 +229,9 @@ namespace EppNet.Data
         /// <param name="payload">The BytePayload to read data from.</param>
         /// <returns></returns>
 
-        public static Vector2 ReadVector2(this BytePayload payload)
+        public static Vector2 ReadVector2(this ref BytePayloadReader reader)
         {
-            Vector2Resolver.Instance.Read(payload, out Vector2 result);
+            Vector2Resolver.Instance.Read(ref reader, out Vector2 result);
             return result;
         }
 
@@ -243,9 +242,9 @@ namespace EppNet.Data
         /// <param name="isAbsolute">If the received array contains absolute vectors</param>
         /// <returns>The received Vector2 array</returns>
 
-        public static Vector2[] ReadVector2Array(this BytePayload payload, out bool isAbsolute)
+        public static Vector2[] ReadVector2Array(this ref BytePayloadReader reader, out bool isAbsolute)
         {
-            ReadResult result = Vector2Resolver.Instance.Read(payload, out Vector2[] output);
+            ReadResult result = Vector2Resolver.Instance.Read(ref reader, out Vector2[] output);
             isAbsolute = result == ReadResult.Success;
             return output;
         }
@@ -264,9 +263,9 @@ namespace EppNet.Data
         /// <br/>Received vector + <paramref name="oldVector"/>
         /// </returns>
 
-        public static Vector2 ReadVector2(this BytePayload payload, Vector2 oldVector)
+        public static Vector2 ReadVector2(this ref BytePayloadReader reader, Vector2 oldVector)
         {
-            ReadResult result = Vector2Resolver.Instance.Read(payload, out Vector2 output);
+            ReadResult result = Vector2Resolver.Instance.Read(ref reader, out Vector2 output);
 
             if (result == ReadResult.SuccessDelta)
                 return oldVector + output;
@@ -282,9 +281,9 @@ namespace EppNet.Data
         /// <param name="isAbsolute">If the received vector is absolute</param>
         /// <returns>The received Vector2</returns>
 
-        public static Vector2 ReadVector2(this BytePayload payload, out bool isAbsolute)
+        public static Vector2 ReadVector2(this ref BytePayloadReader reader, out bool isAbsolute)
         {
-            ReadResult result = Vector2Resolver.Instance.Read(payload, out Vector2 output);
+            ReadResult result = Vector2Resolver.Instance.Read(ref reader, out Vector2 output);
             isAbsolute = result == ReadResult.Success;
             return output;
         }

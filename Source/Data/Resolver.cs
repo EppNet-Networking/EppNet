@@ -4,8 +4,6 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
-using EppNet.Utilities;
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -36,8 +34,8 @@ namespace EppNet.Data
 
     public static class ReadResultExtensions
     {
-        public static bool IsSuccess(this ReadResult result) 
-            => result == ReadResult.Success || result == ReadResult.SuccessDelta;
+        public static bool IsSuccess(this ReadResult result) =>
+            result == ReadResult.Success || result == ReadResult.SuccessDelta;
     }
 
     public readonly ref struct HeaderData
@@ -92,24 +90,24 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadResult Read(BytePayload payload, out T output)
-            => _Internal_Read(payload, out output);
+        public ReadResult Read(ref BytePayloadReader reader, out T output) =>
+            _Internal_Read(ref reader, out output);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadResult Read(BytePayload payload, out object output)
+        public ReadResult Read(ref BytePayloadReader reader, out object output)
         {
-            ReadResult read = _Internal_Read(payload, out T result);
+            ReadResult read = _Internal_Read(ref reader, out T result);
             output = result;
 
             return read;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadResult Read(BytePayload payload, out T[] output)
+        public ReadResult Read(ref BytePayloadReader reader, out T[] output)
         {
             output = default;
 
-            ReadResult read = ByteResolver.Instance.Read(payload, out byte header);
+            ReadResult read = ByteResolver.Instance.Read(ref reader, out byte header);
 
             if (!read.IsSuccess())
                 return ReadResult.Failed;
@@ -120,7 +118,7 @@ namespace EppNet.Data
                 return ReadResult.Success;
             }
 
-            read = IResolver._Internal_ReadHeaderAndGetLength(payload, header, out int length);
+            read = IResolver._Internal_ReadHeaderAndGetLength(ref reader, header, out int length);
 
             if (!read.IsSuccess())
                 return read;
@@ -129,7 +127,7 @@ namespace EppNet.Data
 
             for (int i = 0; i < length; i++)
             {
-                read = _Internal_Read(payload, out T element);
+                read = _Internal_Read(ref reader, out T element);
 
                 if (read == ReadResult.Failed)
                     break;
@@ -141,10 +139,10 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadResult Read<TCollection>(BytePayload payload, out TCollection output) where TCollection : class, ICollection<T>, new()
+        public ReadResult Read<TCollection>(ref BytePayloadReader reader, out TCollection output) where TCollection : class, ICollection<T>, new()
         {
             output = default;
-            ReadResult read = ByteResolver.Instance.Read(payload, out byte header);
+            ReadResult read = ByteResolver.Instance.Read(ref reader, out byte header);
 
             if (!read.IsSuccess())
                 return ReadResult.Failed;
@@ -155,7 +153,7 @@ namespace EppNet.Data
                 return ReadResult.Success;
             }
 
-            read = IResolver._Internal_ReadHeaderAndGetLength(payload, header, out int length);
+            read = IResolver._Internal_ReadHeaderAndGetLength(ref reader, header, out int length);
 
             if (!read.IsSuccess())
                 return read;
@@ -164,7 +162,7 @@ namespace EppNet.Data
 
             for (int i = 0; i < length; i++)
             {
-                read = _Internal_Read(payload, out T element);
+                read = _Internal_Read(ref reader, out T element);
 
                 if (!read.IsSuccess())
                     break;
@@ -178,39 +176,30 @@ namespace EppNet.Data
         /// <summary>
         /// Writes the specified input to the payload.
         /// </summary>
-        /// <param name="payload"></param>
+        /// <param name="writer"></param>
         /// <param name="input"></param>
         /// <returns></returns>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Write(BytePayload payload, T input)
+        public bool Write(ref BytePayloadWriter writer, T input)
         {
-            payload.EnsureReadyToWrite();
-            bool written = _Internal_Write(payload, input);
+            bool written = _Internal_Write(ref writer, input);
 
             if (written && AutoAdvance)
-                payload.Advance(Size);
+                writer.Advance(Size);
 
             return written;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool Write(BytePayload payload, T[] input)
+        public virtual bool Write(ref BytePayloadWriter writer, T[] input)
         {
-            payload.EnsureReadyToWrite();
+            if (input == null || input.Length == 0)
+                return ByteResolver.Instance.Write(ref writer, input == null ?
+                    IResolver.NullArrayHeader :
+                    IResolver.EmptyArrayHeader);
 
-            if (input == null)
-            {
-                ByteResolver.Instance.Write(payload, IResolver.NullArrayHeader);
-                return true;
-            }
-            else if (input.Length == 0)
-            {
-                ByteResolver.Instance.Write(payload, IResolver.EmptyArrayHeader);
-                return true;
-            }
-
-            IResolver._Internal_WriteHeaderAndLength(payload, input.Length);
+            IResolver._Internal_WriteHeaderAndLength(ref writer, input.Length);
             bool written = true;
 
             for (int i = 0; i < input.Length; i++)
@@ -218,29 +207,24 @@ namespace EppNet.Data
                 if (!written)
                     break;
 
-                written = _Internal_Write(payload, input[i]);
+                written = _Internal_Write(ref writer, input[i]);
 
                 if (written && AutoAdvance)
-                    payload.Advance(Size);
+                    writer.Advance(Size);
             }
 
             return written;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool Write<TCollection>(BytePayload payload, TCollection input) where TCollection : class, ICollection<T>
+        public virtual bool Write<TCollection>(ref BytePayloadWriter writer, TCollection input) where TCollection : class, ICollection<T>
         {
-            payload.EnsureReadyToWrite();
-
             if (input == null || input.Count == 0)
-            {
-                ByteResolver.Instance.Write(payload, input == null ?
+                return ByteResolver.Instance.Write(ref writer, input == null ?
                     IResolver.NullArrayHeader :
                     IResolver.EmptyArrayHeader);
-                return true;
-            }
 
-            IResolver._Internal_WriteHeaderAndLength(payload, input.Count);
+            IResolver._Internal_WriteHeaderAndLength(ref writer, input.Count);
             bool written = true;
 
             IEnumerator<T> inputEnum = input.GetEnumerator();
@@ -248,23 +232,23 @@ namespace EppNet.Data
             while (written && inputEnum.MoveNext())
             {
                 T element = inputEnum.Current;
-                written = _Internal_Write(payload, element);
+                written = _Internal_Write(ref writer, element);
 
                 if (written && AutoAdvance)
-                    payload.Advance(Size);
+                    writer.Advance(Size);
             }
 
             return written;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Write(BytePayload payload, object input)
+        public bool Write(ref BytePayloadWriter writer, object input)
         {
             if (input is T typedInput)
-                return Write(payload, typedInput);
+                return Write(ref writer, typedInput);
 
             if (input is T[] typedArray)
-                return Write(payload, typedArray);
+                return Write(ref writer, typedArray);
 
             if (input.GetType().IsGenericType)
             {
@@ -274,41 +258,53 @@ namespace EppNet.Data
                 {
                     // We support all of these
                     ICollection<T> myColl = input as ICollection<T>;
-                    return Write(payload, myColl);
+                    return Write(ref writer, myColl);
                 }
             }
 
             throw new NotSupportedException($"{input.GetType().Name} is not supported!");
         }
 
-        protected abstract bool _Internal_Write(BytePayload payload, T input);
-        protected abstract ReadResult _Internal_Read(BytePayload payload, out T output);
+        protected abstract bool _Internal_Write(ref BytePayloadWriter writer, T input);
+        protected abstract ReadResult _Internal_Read(ref BytePayloadReader reader, out T output);
     }
 
     public static class ResolverExtensions
     {
 
-        public static ReadResult ReadAsInt<T>(this Resolver<T> resolver, BytePayload payload, out int length) where T : IComparable<T>, IConvertible
+        public static ReadResult ReadAsInt<T>(this Resolver<T> resolver, ref BytePayloadReader reader, out int length) where T : IComparable<T>, IConvertible
         {
-            ReadResult result = resolver.Read(payload, out T output);
+            ReadResult result = resolver.Read(ref reader, out T output);
             length = Convert.ToInt32(output);
             return result;
         }
 
-        public static ReadResult ReadAs<T, TOutput>(this Resolver<T> resolver, BytePayload payload, out TOutput output)
-            where T : unmanaged, IComparable<T>, IConvertible
-            where TOutput : unmanaged, IComparable<TOutput>, IConvertible
+        public static ReadResult ReadAs<T, TOutput>(this Resolver<T> resolver, ref BytePayloadReader reader, out TOutput output)
+            where T : unmanaged
+            where TOutput : unmanaged
         {
-            ReadResult result = resolver.Read(payload, out T typedOutput);
-            output = NumberExtensions.CreateChecked<T, TOutput>(typedOutput);
+            output = default;
+            ReadResult result = resolver.Read(ref reader, out T typedOutput);
+
+            if (!result.IsSuccess())
+                return result;
+
+            // Ensure sizes match
+            if (Unsafe.SizeOf<T>() != Unsafe.SizeOf<TOutput>())
+                throw new InvalidOperationException($"Cannot reinterpret cast from {typeof(T)} to {typeof(TOutput)} due to size mismatch.");
+
+            // Bitwise reinterpret cast using stackalloc
+            Span<T> sourceSpan = stackalloc T[1] { typedOutput };
+            output = Unsafe.ReadUnaligned<TOutput>(ref Unsafe.As<T, byte>(ref typedOutput));
             return result;
         }
+
     }
 
     public interface IResolver<T> : IResolver
     {
-        public ReadResult Read(BytePayload payload, out T output);
-        public bool Write(BytePayload payload, T input);
+        public ReadResult Read(ref BytePayloadReader reader, out T output);
+        public bool Write(ref BytePayloadWriter writer, T input);
     }
 
     public interface IResolver
@@ -317,11 +313,11 @@ namespace EppNet.Data
         public const byte NullArrayHeader = 0;
         public const byte EmptyArrayHeader = 16;
 
-        public ReadResult Read(BytePayload payload, out object output);
-        public bool Write(BytePayload payload, object input);
+        public ReadResult Read(ref BytePayloadReader reader, out object output);
+        public bool Write(ref BytePayloadWriter writer, object input);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static internal void _Internal_WriteHeaderAndLength(BytePayload payload, int length)
+        protected static internal void _Internal_WriteHeaderAndLength(ref BytePayloadWriter writer, int length)
         {
             // Type indices
             // 0 -> byte
@@ -336,18 +332,18 @@ namespace EppNet.Data
                 typeIndex = 1;
 
             byte header = (byte)typeIndex;
-            payload.Stream.WriteByte(header);
+            writer.WriteByte(header);
 
             _ = typeIndex switch
             {
-                0 => ByteResolver.Instance.Write(payload, length),
-                1 => UShortResolver.Instance.Write(payload, length),
-                _ => UInt32Resolver.Instance.Write(payload, length),
+                0 => ByteResolver.Instance.Write(ref writer, length),
+                1 => UShortResolver.Instance.Write(ref writer, length),
+                _ => UInt32Resolver.Instance.Write(ref writer, length),
             };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static internal ReadResult _Internal_ReadHeaderAndGetLength(BytePayload payload, byte header, out int length)
+        protected static internal ReadResult _Internal_ReadHeaderAndGetLength(ref BytePayloadReader reader, byte header, out int length)
         {
             // Type indices
             // 0 -> byte
@@ -356,9 +352,9 @@ namespace EppNet.Data
 
             return ((header >> 6) & 0b11) switch
             {
-                0 => ByteResolver.Instance.ReadAsInt(payload, out length),
-                1 => UShortResolver.Instance.ReadAsInt(payload, out length),
-                _ => UInt32Resolver.Instance.ReadAsInt(payload, out length)
+                0 => ByteResolver.Instance.ReadAsInt(ref reader, out length),
+                1 => UShortResolver.Instance.ReadAsInt(ref reader, out length),
+                _ => UInt32Resolver.Instance.ReadAsInt(ref reader, out length)
             };
         }
 

@@ -6,7 +6,6 @@
 
 using EppNet.Attributes;
 
-using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
@@ -20,16 +19,13 @@ namespace EppNet.Data
         public static readonly ShortResolver Instance = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override ReadResult _Internal_Read(BytePayload payload, out short output)
-        {
-            Span<byte> buffer = stackalloc byte[Size];
-            int read = payload.Stream.Read(buffer);
-            return BinaryPrimitives.TryReadInt16LittleEndian(buffer, out output) ? ReadResult.Success : ReadResult.Failed;
-        }
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out short output) =>
+            BinaryPrimitives.TryReadInt16LittleEndian(reader.ReadBytes(Size), out output) 
+                ? ReadResult.Success : ReadResult.Failed;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, short input)
-            => BinaryPrimitives.TryWriteInt16LittleEndian(payload.Stream.GetSpan(Size), input);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, short input) =>
+            BinaryPrimitives.TryWriteInt16LittleEndian(writer.Reserve(Size, clear: false), input);
     }
 
     public static class ShortResolverExtensions
@@ -39,84 +35,84 @@ namespace EppNet.Data
         /// Writes a signed 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, short input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, short input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, short[] input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, short[] input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, short[] input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, short[] input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteShort(this BytePayload payload, short input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void WriteShort(this ref BytePayloadWriter writer, short input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteShortArray(this BytePayload payload, short[] input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void WriteShortArray(this ref BytePayloadWriter writer, short[] input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt16(this BytePayload payload, short input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void WriteInt16(this ref BytePayloadWriter writer, short input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt16Array(this BytePayload payload, short[] input)
-            => ShortResolver.Instance.Write(payload, input);
+        public static void WriteInt16Array(this ref BytePayloadWriter writer, short[] input)
+            => ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 16-bit integer from the stream.
         /// </summary>
-        public static short ReadShort(this BytePayload payload)
+        public static short ReadShort(this ref BytePayloadReader reader)
         {
-            ShortResolver.Instance.Read(payload, out short output);
+            ShortResolver.Instance.Read(ref reader, out short output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 16-bit integer array from the stream.
         /// </summary>
-        public static short[] ReadShortArray(this BytePayload payload)
+        public static short[] ReadShortArray(this ref BytePayloadReader reader)
         {
-            ShortResolver.Instance.Read(payload, out short[] output);
+            ShortResolver.Instance.Read(ref reader, out short[] output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 16-bit integer from the stream.
         /// </summary>
-        public static short ReadInt16(this BytePayload payload)
+        public static short ReadInt16(this ref BytePayloadReader reader)
         {
-            ShortResolver.Instance.Read(payload, out short output);
+            ShortResolver.Instance.Read(ref reader, out short output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 16-bit integer array from the stream.
         /// </summary>
-        public static short[] ReadInt16Array(this BytePayload payload)
+        public static short[] ReadInt16Array(this ref BytePayloadReader reader)
         {
-            ShortResolver.Instance.Read(payload, out short[] output);
+            ShortResolver.Instance.Read(ref reader, out short[] output);
             return output;
         }
 

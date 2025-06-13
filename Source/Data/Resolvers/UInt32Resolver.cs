@@ -6,7 +6,6 @@
 
 using EppNet.Attributes;
 
-using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
@@ -20,16 +19,12 @@ namespace EppNet.Data
         public static readonly UInt32Resolver Instance = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override ReadResult _Internal_Read(BytePayload payload, out uint output)
-        {
-            Span<byte> buffer = stackalloc byte[Size];
-            int read = payload.Stream.Read(buffer);
-            return BinaryPrimitives.TryReadUInt32LittleEndian(buffer, out output) ? ReadResult.Success : ReadResult.Failed;
-        }
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out uint output) =>
+            BinaryPrimitives.TryReadUInt32LittleEndian(reader.ReadBytes(Size), out output) ? ReadResult.Success : ReadResult.Failed;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, uint input)
-            => BinaryPrimitives.TryWriteUInt32LittleEndian(payload.Stream.GetSpan(Size), input);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, uint input) =>
+            BinaryPrimitives.TryWriteUInt32LittleEndian(writer.Reserve(Size, clear: false), input);
     }
 
     public static class UInt32ResolverExtensions
@@ -39,85 +34,85 @@ namespace EppNet.Data
         /// Writes an unsigned 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, uint input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, uint input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, uint[] input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, uint[] input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, uint[] input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, uint[] input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt(this BytePayload payload, uint input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void WriteUInt(this ref BytePayloadWriter writer, uint input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUIntArray(this BytePayload payload, uint[] input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void WriteUIntArray(this ref BytePayloadWriter writer, uint[] input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt32(this BytePayload payload, uint input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void WriteUInt32(this ref BytePayloadWriter writer, uint input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt32Array(this BytePayload payload, uint[] input)
-            => UInt32Resolver.Instance.Write(payload, input);
+        public static void WriteUInt32Array(this ref BytePayloadWriter writer, uint[] input)
+            => UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads an unsigned 32-bit integer from the stream.
         /// </summary>
 
-        public static uint ReadUInt(this BytePayload payload)
+        public static uint ReadUInt(this ref BytePayloadReader reader)
         {
-            UInt32Resolver.Instance.Read(payload, out uint output);
+            UInt32Resolver.Instance.Read(ref reader, out uint output);
             return output;
         }
 
         /// <summary>
         /// Reads an unsigned 32-bit integer array from the stream.
         /// </summary>
-        public static uint[] ReadUIntArray(this BytePayload payload)
+        public static uint[] ReadUIntArray(this ref BytePayloadReader reader)
         {
-            UInt32Resolver.Instance.Read(payload, out uint[] output);
+            UInt32Resolver.Instance.Read(ref reader, out uint[] output);
             return output;
         }
 
         /// <summary>
         /// Reads an unsigned 32-bit integer from the stream.
         /// </summary>
-        public static uint ReadUInt32(this BytePayload payload)
+        public static uint ReadUInt32(this ref BytePayloadReader reader)
         {
-            UInt32Resolver.Instance.Read(payload, out uint output);
+            UInt32Resolver.Instance.Read(ref reader, out uint output);
             return output;
         }
 
         /// <summary>
         /// Reads an unsigned 32-bit integer array from the stream.
         /// </summary>
-        public static uint[] ReadUInt32Array(this BytePayload payload)
+        public static uint[] ReadUInt32Array(this ref BytePayloadReader reader)
         {
-            UInt32Resolver.Instance.Read(payload, out uint[] output);
+            UInt32Resolver.Instance.Read(ref reader, out uint[] output);
             return output;
         }
 

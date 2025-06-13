@@ -19,18 +19,17 @@ namespace EppNet.Data
         public SByteResolver() : base(autoAdvance: false) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override ReadResult _Internal_Read(BytePayload payload, out sbyte output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out sbyte output)
         {
-            int result = payload.Stream.ReadByte();
-            output = (sbyte)result;
-
-            return result == -1 ? ReadResult.Failed : ReadResult.Success;
+            bool read = reader.TryReadByte(out byte result);
+            output = (sbyte) result;
+            return read ? ReadResult.Success : ReadResult.Failed;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, sbyte input)
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, sbyte input)
         {
-            payload.Stream.WriteByte((byte)input);
+            writer.WriteByte((byte)input);
             return true;
         }
 
@@ -43,84 +42,84 @@ namespace EppNet.Data
         /// Writes a signed 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, sbyte input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, sbyte input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this BytePayload payload, sbyte[] input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void Write(this ref BytePayloadWriter writer, sbyte[] input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this BytePayload payload, sbyte[] input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, sbyte[] input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteSByte(this BytePayload payload, sbyte input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void WriteSByte(this ref BytePayloadWriter writer, sbyte input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteSByteArray(this BytePayload payload, sbyte[] input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void WriteSByteArray(this ref BytePayloadWriter writer, sbyte[] input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt8(this BytePayload payload, sbyte input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void WriteInt8(this ref BytePayloadWriter writer, sbyte input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt8Array(this BytePayload payload, sbyte[] input)
-            => SByteResolver.Instance.Write(payload, input);
+        public static void WriteInt8Array(this ref BytePayloadWriter writer, sbyte[] input)
+            => SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 8-bit integer from the stream.
         /// </summary>
-        public static sbyte ReadSByte(this BytePayload payload)
+        public static sbyte ReadSByte(this ref BytePayloadReader reader)
         {
-            SByteResolver.Instance.Read(payload, out sbyte output);
+            SByteResolver.Instance.Read(ref reader, out sbyte output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 8-bit integer array from the stream.
         /// </summary>
-        public static sbyte[] ReadSByteArray(this BytePayload payload)
+        public static sbyte[] ReadSByteArray(this ref BytePayloadReader reader)
         {
-            SByteResolver.Instance.Read(payload, out sbyte[] output);
+            SByteResolver.Instance.Read(ref reader, out sbyte[] output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 8-bit integer from the stream.
         /// </summary>
-        public static sbyte ReadInt8(this BytePayload payload)
+        public static sbyte ReadInt8(this ref BytePayloadReader reader)
         {
-            SByteResolver.Instance.Read(payload, out sbyte output);
+            SByteResolver.Instance.Read(ref reader, out sbyte output);
             return output;
         }
 
         /// <summary>
         /// Reads a signed 8-bit integer array from the stream.
         /// </summary>
-        public static sbyte[] ReadInt8Array(this BytePayload payload)
+        public static sbyte[] ReadInt8Array(this ref BytePayloadReader reader)
         {
-            SByteResolver.Instance.Read(payload, out sbyte[] output);
+            SByteResolver.Instance.Read(ref reader, out sbyte[] output);
             return output;
         }
     }

@@ -32,14 +32,18 @@ namespace EppNet.Data
         public T Zero { protected set; get; }
         public T Identity { protected set; get; }
 
+        public QuaternionAdapter ZeroAdapter { get; } = new(0, 0, 0, 0);
+
+        public QuaternionAdapter IdentityAdapter { get; } = new(0, 0, 0, 1);
+
         protected QuaternionResolverBase() : base(autoAdvance: false) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-        protected override ReadResult _Internal_Read(BytePayload payload, out T output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out T output)
         {
             // Let's consider the header
-            byte header = payload.ReadByte();
+            byte header = reader.ReadByte();
 
             if (header == IdentityHeader || header == ZeroHeader)
             {
@@ -64,19 +68,19 @@ namespace EppNet.Data
                 if (!ByteQuantization)
                 {
                     // Read the float like any other (this auto advances)
-                    FloatResolver.Instance.Read(payload, out components[i]);
+                    FloatResolver.Instance.Read(ref reader, out components[i]);
                     continue;
                 }
 
                 // Byte dequantization
-                components[i] = QuaternionAdapter.Dequantize(payload.ReadByte());
+                components[i] = QuaternionAdapter.Dequantize(reader.ReadByte());
             }
 
             float sumOfSquares = 1.0f - (MathF.Pow(components[0], 2) + MathF.Pow(components[1], 2)
                 + MathF.Pow(components[2], 2) + MathF.Pow(components[3], 2));
 
             // Generate the largest value
-            components[largestIndex] = MathF.Sqrt(sumOfSquares) * (negative ? -1 : 1);
+            components[largestIndex] = MathF.Sqrt(MathF.Max(0f, sumOfSquares)) * (negative ? -1 : 1);
 
             QuaternionAdapter adapter = new(components[0], 
                 components[1], 
@@ -100,24 +104,30 @@ namespace EppNet.Data
         /// If <see cref="ByteQuantization"/>:<br/>
         /// - 4 bytes are sent (1 byte header indicating index of largest 
         /// </summary>
-        /// <param name="payload"></param>
+        /// <param name="writer"></param>
         /// <param name="input"></param>
         /// <returns></returns>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(BytePayload payload, T input)
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, T input)
         {
 
+            QuaternionAdapter adaptedInput = ToAdapter(input);
+
             // Identity and zero quats use a single byte
-            if (input.Equals(Identity) || input.Equals(Zero))
+            if (adaptedInput.ApproximatelyEquals(IdentityAdapter))
             {
-                payload.Stream.WriteByte(input.Equals(Identity)
-                    ? IdentityHeader
-                    : ZeroHeader);
+                writer.WriteByte(IdentityHeader);
                 return true;
             }
 
-            QuaternionAdapter normalized = QuaternionAdapter.Normalize(ToAdapter(input));
+            if (adaptedInput.ApproximatelyEquals(ZeroAdapter))
+            {
+                writer.WriteByte(ZeroHeader);
+                return true;
+            }
+
+            QuaternionAdapter normalized = QuaternionAdapter.Normalize(adaptedInput);
 
             int largestIndex = 0;
             float largest = MathF.Abs(normalized.X);
@@ -144,11 +154,11 @@ namespace EppNet.Data
             if (negative)
                 header |= 1 << 7;
 
-            payload.Stream.WriteByte(header);
+            writer.WriteByte(header);
 
             if (ByteQuantization)
             {
-                Span<byte> bytes = stackalloc byte[3];
+                Span<byte> bytes = writer.Reserve(3, clear: false);
                 int byteIndex = 0;
                 int quatIndex = 0;
 
@@ -161,13 +171,7 @@ namespace EppNet.Data
                     }
 
                     // Quantize the float into a byte
-                    bytes[byteIndex] = QuaternionAdapter.Quantize(normalized[quatIndex++]);
-
-                    // Write the byte to the stream
-                    payload.Stream.WriteByte(bytes[byteIndex]);
-
-                    // Advance to the next index
-                    byteIndex++;
+                    bytes[byteIndex++] = QuaternionAdapter.Quantize(normalized[quatIndex++]);
                 }
             }
             else
@@ -178,7 +182,7 @@ namespace EppNet.Data
                     if (i == largestIndex)
                         break;
 
-                    FloatResolver.Instance.Write(payload, normalized[i]);
+                    FloatResolver.Instance.Write(ref writer, normalized[i]);
                 }
             }
 
