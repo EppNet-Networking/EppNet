@@ -109,5 +109,61 @@ namespace EppNet.Utilities
         public static float Dequantize(this byte b) =>
             _dequantizeTable[b];
 
+        public static bool TryCastToFloat<T>(T value, out float result)
+        {
+            result = 0f;
+
+            switch (value)
+            {
+                case float f:
+                    result = f;
+                    return true;
+
+                case double d:
+                    result = (float)d;
+                    return true;
+
+                case int i:
+                    result = i;
+                    return true;
+
+                case uint ui:
+                    result = ui;
+                    return true;
+
+                case long l:
+                    result = l;
+                    return true;
+
+                case ulong ul:
+                    result = ul;
+                    return true;
+
+                case short s:
+                    result = s;
+                    return true;
+
+                case ushort us:
+                    result = us;
+                    return true;
+
+                case byte b:
+                    result = b;
+                    return true;
+
+                case sbyte sb:
+                    result = sb;
+                    return true;
+
+                case decimal dec:
+                    result = (float)dec;
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+
     }
 }

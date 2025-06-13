@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////
-/// Filename: Vector2Adapter.cs
+/// Filename: Vector4Adapter.cs
 /// Date: June 13, 2025
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
@@ -7,18 +7,19 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using EppNet.Utilities;
 
 namespace EppNet.Data
 {
 
-    public struct Vector2Adapter : IAdapter<Vector2Adapter, float, Vector2>
+    public struct Vector4Adapter : IAdapter<Vector4Adapter, float, Vector4>
     {
-    
+
         public float X { set; get; }
         public float Y { set; get; }
+        public float Z { set; get; }
+        public float W { set; get; }
 
-        public readonly int NumComponents => 2;
+        public readonly int NumComponents => 4;
 
         public float this[int index]
         {
@@ -27,6 +28,8 @@ namespace EppNet.Data
             {
                 0 => X,
                 1 => Y,
+                2 => Z,
+                3 => W,
                 _ => throw new ArgumentOutOfRangeException(nameof(index))
             };
 
@@ -43,27 +46,36 @@ namespace EppNet.Data
                         Y = value;
                         break;
 
+                    case 2:
+                        Z = value;
+                        break;
+
+                    case 3:
+                        W = value;
+                        break;
+
                     default:
                         throw new ArgumentOutOfRangeException(nameof(index));
                 }
             }
-
         }
 
-        public Vector2Adapter(float x, float y)
+        public Vector4Adapter(float x, float y, float z, float w)
         {
             this.X = x;
             this.Y = y;
+            this.Z = z;
+            this.W = w;
         }
 
-        public readonly Vector2Adapter FromNative(in Vector2 vector) =>
-            new(vector.X, vector.Y);
+        public readonly Vector4Adapter FromNative(in Vector4 other) =>
+            new(other.X, other.Y, other.Z, other.W);
 
-        public readonly Vector2 ToNative()
-            => new(X, Y);
+        public readonly Vector4 ToNative() =>
+            new(X, Y, Z, W);
 
-        public readonly override string ToString() =>
-             $"{X}, {Y}";
+        public override readonly string ToString() =>
+            $"({X}, {Y}, {Z}, {W})";
 
     }
 

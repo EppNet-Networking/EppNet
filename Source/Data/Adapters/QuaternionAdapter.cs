@@ -5,17 +5,23 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Utilities;
-using Microsoft.Diagnostics.Tracing;
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 
 namespace EppNet.Data
 {
 
-    public struct QuaternionAdapter : IApproximatelyEquatable<QuaternionAdapter>
+    public struct QuaternionAdapter : IAdapter<QuaternionAdapter, float, Quaternion>
     {
+
+        public static implicit operator Quaternion(QuaternionAdapter a) =>
+            new(a.X, a.Y, a.Z, a.W);
+
+        public static explicit operator QuaternionAdapter(Quaternion q) =>
+            new(q.X, q.Y, q.Z, q.W);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static QuaternionAdapter Normalize(QuaternionAdapter quat)
@@ -95,6 +101,8 @@ namespace EppNet.Data
                 result[2], result[3]);
         }
 
+        public readonly int NumComponents => 4;
+
         public float X;
         public float Y;
         public float Z;
@@ -153,14 +161,14 @@ namespace EppNet.Data
 
         }
 
+        public readonly QuaternionAdapter FromNative(in Quaternion quaternion) =>
+            new(quaternion.X, quaternion.Y, quaternion.Z, quaternion.W);
+
+        public readonly Quaternion ToNative() =>
+            new(X, Y, Z, W);
+
         public override readonly string ToString() =>
             $"({X}, {Y}, {Z}, {W})";
-
-        public static implicit operator System.Numerics.Quaternion(QuaternionAdapter a)
-            => new(a.X, a.Y, a.Z, a.W);
-
-        public static explicit operator QuaternionAdapter(System.Numerics.Quaternion q)
-            => new(q.X, q.Y, q.Z, q.W);
     }
 
 }
