@@ -6,7 +6,6 @@
 /// https://stackoverflow.com/a/48448292
 ///////////////////////////////////////////////////////
 using System;
-using System.Numerics;
 
 namespace EppNet.Utilities
 {
@@ -24,7 +23,12 @@ namespace EppNet.Utilities
         /// </summary>
         public const float ByteQuantizer = 127.5f;
 
-        public const float Epsilon = 1e-6f;
+        public const float Epsilon = 0.001f;
+
+        /// <summary>
+        /// Epsilon for quaternion comparisons
+        /// </summary>
+        public const float QuaternionEpsilon = 1e-6f;
 
         private static readonly double[] _roundLookup = CreateRoundLookup();
         private static readonly float[] _dequantizeTable = CreateDequantizeLookup();
@@ -69,8 +73,8 @@ namespace EppNet.Utilities
         /// - Rounding to <0 decimal places returns the provided number
         /// </summary>
         /// <returns></returns>
-        public static double Round(this float f, int decimals) => ((double)f).Round(decimals);
-
+        public static double Round(this float f, int decimals) =>
+            ((double)f).Round(decimals);
 
         /// <summary>
         /// Rounds the specified number to the specified decimal places<br/>

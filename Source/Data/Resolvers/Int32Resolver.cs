@@ -23,12 +23,13 @@ namespace EppNet.Data
         protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out int output)
         {
             ReadOnlySpan<byte> buffer = reader.ReadBytes(Size);
-            return BinaryPrimitives.TryReadInt32LittleEndian(buffer, out output) ? ReadResult.Success : ReadResult.Failed;
+            return BinaryPrimitives.TryReadInt32LittleEndian(buffer, out output) ?
+                ReadResult.Success : ReadResult.Failed;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(ref BytePayloadWriter writer, int input)
-            => BinaryPrimitives.TryWriteInt32LittleEndian(writer.Reserve(Size, clear: false), input);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, int input) =>
+            BinaryPrimitives.TryWriteInt32LittleEndian(writer.Reserve(Size, clear: false), input);
     }
 
     public static class Int32ResolverExtensions
@@ -38,54 +39,54 @@ namespace EppNet.Data
         /// Writes a signed 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, int input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, int input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 32-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, int[] input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, int[] input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 32-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, int[] input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, int[] input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt(this ref BytePayloadWriter writer, int input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void WriteInt(this ref BytePayloadWriter writer, int input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 32-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteIntArray(this ref BytePayloadWriter writer, int[] input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void WriteIntArray(this ref BytePayloadWriter writer, int[] input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt32(this ref BytePayloadWriter writer, int input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void WriteInt32(this ref BytePayloadWriter writer, int input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 32-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteInt32Array(this ref BytePayloadWriter writer, int[] input)
-            => Int32Resolver.Instance.Write(ref writer, input);
+        public static void WriteInt32Array(this ref BytePayloadWriter writer, int[] input) =>
+            Int32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 32-bit integer from the stream.

@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Utilities;
+using Microsoft.Diagnostics.Tracing;
 
 using System;
 using System.Runtime.CompilerServices;
@@ -13,14 +14,14 @@ using System.Runtime.CompilerServices;
 namespace EppNet.Data
 {
 
-    public struct QuaternionAdapter
+    public struct QuaternionAdapter : IApproximatelyEquatable<QuaternionAdapter>
     {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static QuaternionAdapter Normalize(QuaternionAdapter quat)
         {
             float len = quat.Length();
-            return (len < FastMath.Epsilon) ? new(0, 0, 0, 1) : new(
+            return (len < FastMath.QuaternionEpsilon) ? new(0, 0, 0, 1) : new(
                 quat.X / len,
                 quat.Y / len,
                 quat.Z / len,
@@ -108,17 +109,17 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool ApproximatelyEquals(QuaternionAdapter other, float tolerance = FastMath.Epsilon)
-        {
-            float dot = (X * other.X) + (Y * other.Y) + (Z * other.Z) + (W * other.W);
-            return MathF.Abs(dot) > 1f - tolerance;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
             float dotProd = (X * X) + (Y * Y) + (Z * Z) + (W * W);
             return MathF.Sqrt(dotProd);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool ApproximatelyEquals(QuaternionAdapter other, float epsilon = FastMath.QuaternionEpsilon)
+        {
+            float dot = (X * other.X) + (Y * other.Y) + (Z * other.Z) + (W * other.W);
+            return MathF.Abs(dot) > 1f - epsilon;
         }
 
         public float this[int index]
@@ -133,7 +134,7 @@ namespace EppNet.Data
                     1 => Y,
                     2 => Z,
                     3 => W,
-                    _ => throw new System.ArgumentOutOfRangeException(nameof(index)),
+                    _ => throw new ArgumentOutOfRangeException(nameof(index)),
                 };
             }
 
@@ -146,14 +147,17 @@ namespace EppNet.Data
                     1 => new(X, value, Z, W),
                     2 => new(X, Y, value, W),
                     3 => new(X, Y, Z, value),
-                    _ => throw new System.ArgumentOutOfRangeException(nameof(index))
+                    _ => throw new ArgumentOutOfRangeException(nameof(index))
                 };
             }
 
         }
 
+        public override readonly string ToString() =>
+            $"({X}, {Y}, {Z}, {W})";
+
         public static implicit operator System.Numerics.Quaternion(QuaternionAdapter a)
-            => new System.Numerics.Quaternion(a.X, a.Y, a.Z, a.W);
+            => new(a.X, a.Y, a.Z, a.W);
 
         public static explicit operator QuaternionAdapter(System.Numerics.Quaternion q)
             => new(q.X, q.Y, q.Z, q.W);

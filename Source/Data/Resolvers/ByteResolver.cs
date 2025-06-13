@@ -42,50 +42,50 @@ namespace EppNet.Data
         /// Writes an unsigned 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, byte input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, byte input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, byte[] input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, byte[] input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, byte[] input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, byte[] input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteByte(this ref BytePayloadWriter writer, byte input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void WriteByte(this ref BytePayloadWriter writer, byte input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteByteArray(this ref BytePayloadWriter writer, byte[] input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void WriteByteArray(this ref BytePayloadWriter writer, byte[] input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt8(this ref BytePayloadWriter writer, byte input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void WriteUInt8(this ref BytePayloadWriter writer, byte input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt8Array(this ref BytePayloadWriter writer, byte[] input)
-            => ByteResolver.Instance.Write(ref writer, input);
+        public static void WriteUInt8Array(this ref BytePayloadWriter writer, byte[] input) =>
+            ByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads an unsigned 8-bit integer from the stream.

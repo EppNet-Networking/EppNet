@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 namespace EppNet.Data
 {
 
-    public abstract class QuaternionResolverBase<T> : Resolver<T> where T : unmanaged, IEquatable<T>
+    public abstract class QuaternionResolverBase<T> : Resolver<T> where T : struct, IEquatable<T>
     {
         /// <summary>
         /// Whether or not to use byte quantization for packing Quaternions<br/>
@@ -82,13 +82,12 @@ namespace EppNet.Data
             // Generate the largest value
             components[largestIndex] = MathF.Sqrt(MathF.Max(0f, sumOfSquares)) * (negative ? -1 : 1);
 
-            QuaternionAdapter adapter = new(components[0], 
-                components[1], 
-                components[2], 
+            QuaternionAdapter adapter = new(components[0],
+                components[1],
+                components[2],
                 components[3]);
 
             output = FromAdapter(adapter);
-
             return ReadResult.Success;
         }
 

@@ -15,7 +15,6 @@ namespace EppNet.Data
     [NetworkTypeResolver]
     public class UInt32Resolver : Resolver<uint>
     {
-
         public static readonly UInt32Resolver Instance = new();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,50 +33,50 @@ namespace EppNet.Data
         /// Writes an unsigned 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, uint input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, uint input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, uint[] input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, uint[] input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, uint[] input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, uint[] input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt(this ref BytePayloadWriter writer, uint input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void WriteUInt(this ref BytePayloadWriter writer, uint input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUIntArray(this ref BytePayloadWriter writer, uint[] input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void WriteUIntArray(this ref BytePayloadWriter writer, uint[] input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt32(this ref BytePayloadWriter writer, uint input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void WriteUInt32(this ref BytePayloadWriter writer, uint input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 32-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt32Array(this ref BytePayloadWriter writer, uint[] input)
-            => UInt32Resolver.Instance.Write(ref writer, input);
+        public static void WriteUInt32Array(this ref BytePayloadWriter writer, uint[] input) =>
+            UInt32Resolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads an unsigned 32-bit integer from the stream.
@@ -119,4 +118,3 @@ namespace EppNet.Data
     }
 
 }
-

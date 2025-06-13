@@ -42,50 +42,50 @@ namespace EppNet.Data
         /// Writes a signed 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, sbyte input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, sbyte input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, sbyte[] input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, sbyte[] input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, sbyte[] input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, sbyte[] input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteSByte(this ref BytePayloadWriter writer, sbyte input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void WriteSByte(this ref BytePayloadWriter writer, sbyte input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteSByteArray(this ref BytePayloadWriter writer, sbyte[] input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void WriteSByteArray(this ref BytePayloadWriter writer, sbyte[] input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt8(this ref BytePayloadWriter writer, sbyte input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void WriteInt8(this ref BytePayloadWriter writer, sbyte input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 8-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt8Array(this ref BytePayloadWriter writer, sbyte[] input)
-            => SByteResolver.Instance.Write(ref writer, input);
+        public static void WriteInt8Array(this ref BytePayloadWriter writer, sbyte[] input) =>
+            SByteResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 8-bit integer from the stream.
@@ -122,6 +122,7 @@ namespace EppNet.Data
             SByteResolver.Instance.Read(ref reader, out sbyte[] output);
             return output;
         }
+        
     }
 
 }

@@ -37,8 +37,8 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(ref BytePayloadWriter writer, Guid input)
-            => input.TryWriteBytes(writer.Reserve(Size, clear: false));
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, Guid input) =>
+            input.TryWriteBytes(writer.Reserve(Size, clear: false));
 
     }
 
@@ -49,47 +49,47 @@ namespace EppNet.Data
         /// Writes 16 unsigned 8-bit integers to the stream denoting the Guid
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, Guid input)
-            => GuidResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, Guid input) =>
+            GuidResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the specified input to the stream<br/>
         /// See <see cref="Write(BytePayload, Guid)"/> for more info on how each Guid is written
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, Guid[] input)
-            => GuidResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, Guid[] input) =>
+            GuidResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the specified collection input to the stream<br/>
         /// See <see cref="Write(BytePayload, Guid)"/> for more info on how each Guid is written
         /// </summary>
         /// <param name="input"></param>
-        public static void Write<TCollection>(this ref BytePayloadWriter writer, TCollection input) where TCollection : class, ICollection<Guid>
-            => GuidResolver.Instance.Write(ref writer, input);
+        public static void Write<TCollection>(this ref BytePayloadWriter writer, TCollection input) where TCollection : class, ICollection<Guid> =>
+            GuidResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the specified collection input to the stream<br/>
         /// See <see cref="Write(BytePayload, Guid)"/> for more info on how each Guid is written
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, Guid[] input)
-            => GuidResolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, Guid[] input) =>
+            GuidResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes 16 unsigned 8-bit integers to the stream denoting the Guid
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteGuid(this ref BytePayloadWriter writer, Guid input)
-            => GuidResolver.Instance.Write(ref writer, input);
+        public static void WriteGuid(this ref BytePayloadWriter writer, Guid input) =>
+            GuidResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes the specified collection input to the stream<br/>
         /// See <see cref="Write(BytePayload, Guid)"/> for more info on how each Guid is written
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteGuidArray(this ref BytePayloadWriter writer, Guid[] input)
-            => GuidResolver.Instance.Write(ref writer, input);
+        public static void WriteGuidArray(this ref BytePayloadWriter writer, Guid[] input) =>
+            GuidResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a Guid collection from the stream<br/>

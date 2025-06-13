@@ -36,54 +36,54 @@ namespace EppNet.Data
         /// Writes a signed 64-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, long input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, long input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, long[] input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, long[] input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, long[] input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, long[] input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteLong(this ref BytePayloadWriter writer, long input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void WriteLong(this ref BytePayloadWriter writer, long input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteLongArray(this ref BytePayloadWriter writer, long[] input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void WriteLongArray(this ref BytePayloadWriter writer, long[] input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt64(this ref BytePayloadWriter writer, long input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void WriteInt64(this ref BytePayloadWriter writer, long input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 64-bit integer array to the stream.
         /// </summary>
         /// <param name="payload"></param>
         /// <param name="input"></param>
-        public static void WriteInt64Array(this ref BytePayloadWriter writer, long[] input)
-            => LongResolver.Instance.Write(ref writer, input);
+        public static void WriteInt64Array(this ref BytePayloadWriter writer, long[] input) =>
+            LongResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 64-bit integer from the stream.

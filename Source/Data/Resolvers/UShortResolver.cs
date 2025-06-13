@@ -39,57 +39,57 @@ namespace EppNet.Data
         /// Writes an unsigned 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, ushort input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, ushort input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, ushort[] input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, ushort[] input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer collection to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write<TCollection>(this ref BytePayloadWriter writer, TCollection input) where TCollection : ICollection<ushort>
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void Write<TCollection>(this ref BytePayloadWriter writer, TCollection input) where TCollection : ICollection<ushort> =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, ushort[] input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, ushort[] input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUShort(this ref BytePayloadWriter writer, ushort input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void WriteUShort(this ref BytePayloadWriter writer, ushort input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUShortArray(this ref BytePayloadWriter writer, ushort[] input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void WriteUShortArray(this ref BytePayloadWriter writer, ushort[] input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt16(this ref BytePayloadWriter writer, ushort input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void WriteUInt16(this ref BytePayloadWriter writer, ushort input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes an unsigned 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteUInt16Array(this ref BytePayloadWriter writer, ushort[] input)
-            => UShortResolver.Instance.Write(ref writer, input);
+        public static void WriteUInt16Array(this ref BytePayloadWriter writer, ushort[] input) =>
+            UShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads an unsigned 16-bit integer collection from the stream.

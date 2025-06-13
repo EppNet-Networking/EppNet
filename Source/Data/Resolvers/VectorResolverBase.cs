@@ -40,6 +40,11 @@ namespace EppNet.Data
         public const byte OneHeader = 64 + 4;
 
         /// <summary>
+        /// Signifies that every component is equal
+        /// </summary>
+        public const byte UniformHeader = 64 + 5;
+
+        /// <summary>
         /// The default Vector type output (i.e. zero for each component)
         /// </summary>
         public T Default { protected set; get; }
@@ -331,8 +336,8 @@ namespace EppNet.Data
             return readResult;
         }
 
-        protected override bool _Internal_Write(ref BytePayloadWriter writer, T input)
-            => Write(ref writer, input, absolute: true);
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, T input) =>
+            Write(ref writer, input, absolute: true);
 
         public abstract T Put(T input, float value, int index);
 

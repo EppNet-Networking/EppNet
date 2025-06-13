@@ -35,50 +35,50 @@ namespace EppNet.Data
         /// Writes a signed 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, short input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, short input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void Write(this ref BytePayloadWriter writer, short[] input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void Write(this ref BytePayloadWriter writer, short[] input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteArray(this ref BytePayloadWriter writer, short[] input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void WriteArray(this ref BytePayloadWriter writer, short[] input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteShort(this ref BytePayloadWriter writer, short input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void WriteShort(this ref BytePayloadWriter writer, short input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteShortArray(this ref BytePayloadWriter writer, short[] input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void WriteShortArray(this ref BytePayloadWriter writer, short[] input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt16(this ref BytePayloadWriter writer, short input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void WriteInt16(this ref BytePayloadWriter writer, short input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Writes a signed 16-bit integer array to the stream.
         /// </summary>
         /// <param name="input"></param>
-        public static void WriteInt16Array(this ref BytePayloadWriter writer, short[] input)
-            => ShortResolver.Instance.Write(ref writer, input);
+        public static void WriteInt16Array(this ref BytePayloadWriter writer, short[] input) =>
+            ShortResolver.Instance.Write(ref writer, input);
 
         /// <summary>
         /// Reads a signed 16-bit integer from the stream.
