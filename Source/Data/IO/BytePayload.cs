@@ -9,6 +9,7 @@ using EppNet.Utilities;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 [DebuggerDisplay("Capacity = {Capacity}, Length = {Length}, IsPooled = {IsPooled}")]
 public sealed class BytePayload : IDisposable
@@ -235,6 +236,8 @@ public ref struct BytePayloadWriter
 
     public int BytesWritten { internal set; get; }
 
+    public Encoding Encoder { set; get; }
+
     private readonly BytePayload _owner;
 
     /// <summary>
@@ -256,6 +259,7 @@ public ref struct BytePayloadWriter
         this._owner = owner;
         this.Position = reserveHeader ? BytePayload.HeaderOffset : 0;
         this.BytesWritten = 0;
+        this.Encoder = Encoding.UTF8;
     }
 
     /// <summary>
@@ -282,6 +286,7 @@ public ref struct BytePayloadWriter
         this._owner = owner;
         this.Position = reserveHeader ? BytePayload.HeaderOffset + offset : offset;
         this.BytesWritten = 0;
+        this.Encoder = Encoding.UTF8;
     }
 
     /// <summary>
@@ -475,6 +480,8 @@ public ref struct BytePayloadReader
 
     public int BytesRead { internal set; get; }
 
+    public Encoding Encoder { set; get; }
+
     private readonly BytePayload _owner;
 
     /// <summary>
@@ -496,6 +503,7 @@ public ref struct BytePayloadReader
         this._owner = owner;
         this.Position = skipHeader ? BytePayload.HeaderOffset : 0;
         this.BytesRead = 0;
+        this.Encoder = Encoding.UTF8;
     }
 
     /// <summary>
@@ -522,6 +530,7 @@ public ref struct BytePayloadReader
         this._owner = owner;
         this.Position = skipHeader ? BytePayload.HeaderOffset + offset : offset;
         this.BytesRead = 0;
+        this.Encoder = Encoding.UTF8;
     }
 
     /// <summary>

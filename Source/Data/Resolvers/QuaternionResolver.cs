@@ -17,7 +17,6 @@ namespace EppNet.Data
 
         public static readonly QuaternionResolver Instance = new();
 
-
         public QuaternionResolver()
         {
             this.Zero = new(0, 0, 0, 0);

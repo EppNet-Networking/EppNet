@@ -114,7 +114,7 @@ namespace EppNet.Data
 
             if (header == IResolver.NullArrayHeader || header == IResolver.EmptyArrayHeader)
             {
-                output = header == IResolver.NullArrayHeader ? null : default;
+                output = header == IResolver.NullArrayHeader ? null : Array.Empty<T>();
                 return ReadResult.Success;
             }
 
