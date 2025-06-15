@@ -12,7 +12,7 @@ namespace EppNet.Data
 {
 
     [NetworkTypeResolver]
-    public class Vector3Resolver : VectorResolverBase<Vector3>
+    public class Vector3Resolver : VectorResolverBase<Vector3Adapter, Vector3>
     {
 
         public static readonly Vector3Resolver Instance = new();
@@ -25,28 +25,6 @@ namespace EppNet.Data
             this.UnitZ = Vector3.UnitZ;
             this.UnitW = Vector3.Zero;
             this.One = Vector3.One;
-            this.NumComponents = 3;
-        }
-
-        public override Vector3 Put(Vector3 input, float value, int index)
-        {
-            switch (index)
-            {
-
-                case 0:
-                    input.X = value;
-                    break;
-
-                case 1:
-                    input.Y = value;
-                    break;
-
-                default:
-                    input.Z = value;
-                    break;
-            }
-
-            return input;
         }
     }
 

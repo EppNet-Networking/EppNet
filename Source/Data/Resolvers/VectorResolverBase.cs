@@ -5,13 +5,14 @@
 ///////////////////////////////////////////////////////
 
 using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace EppNet.Data
 {
 
-    public abstract class VectorResolverBase<T> : Resolver<T> where T : struct, IEquatable<T>
+    public abstract class VectorResolverBase<TAdapter, TNative> : Resolver<TNative>
+        where TAdapter : struct, IAdapter<TAdapter, float, TNative>
+        where TNative : struct, IEquatable<TNative>
     {
 
         /// <summary>
@@ -47,21 +48,15 @@ namespace EppNet.Data
         /// <summary>
         /// The default Vector type output (i.e. zero for each component)
         /// </summary>
-        public T Default { protected set; get; }
+        public TNative Default { protected set; get; }
 
-        /// <summary>
-        /// How many components are in this vector<br/>
-        /// Vector2 => 2, <br/>
-        /// Vector3 => 3, <br/>
-        /// Vector4 => 4, etc.
-        /// </summary>
-        public int NumComponents { protected set; get; }
+        public static TAdapter DefaultAdapter => new();
 
-        public T UnitX { protected set; get; }
-        public T UnitY { protected set; get; }
-        public T UnitZ { protected set; get; }
-        public T UnitW { protected set; get; }
-        public T One { protected set; get; }
+        public TNative UnitX { protected set; get; }
+        public TNative UnitY { protected set; get; }
+        public TNative UnitZ { protected set; get; }
+        public TNative UnitW { protected set; get; }
+        public TNative One { protected set; get; }
 
         protected VectorResolverBase(bool autoAdvance = true) : base(autoAdvance) { }
 
@@ -70,42 +65,9 @@ namespace EppNet.Data
         protected VectorResolverBase(int size) : base(size) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected virtual void ExtractFloatComponents(T input, Span<float> values)
-        {
-            switch (input)
-            {
-
-                case Vector2 v2:
-                    values[0] = v2.X;
-                    values[1] = v2.Y;
-                    break;
-
-                case Vector3 v3:
-                    values[0] = v3.X;
-                    values[1] = v3.Y;
-                    values[2] = v3.Z;
-                    break;
-
-                case Vector4 v4:
-                    values[0] = v4.X;
-                    values[1] = v4.Y;
-                    values[2] = v4.Z;
-                    values[3] = v4.W;
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected HeaderData _Internal_CreateHeaderWithType(T input, bool signed = false, bool absolute = true)
+        protected HeaderData _Internal_CreateHeaderWithType(TAdapter input, bool signed = false, bool absolute = true)
         {
             int largestTypeIndex = 0;
-
-            Span<float> values = stackalloc float[NumComponents];
-            ExtractFloatComponents(input, values);
 
             // Type indices
             // 0 -> byte or sbyte
@@ -113,9 +75,9 @@ namespace EppNet.Data
             // 2 -> uint or int
             // 3 -> float
 
-            for (int i = 0; i < NumComponents; i++)
+            for (int i = 0; i < input.NumComponents; i++)
             {
-                float value = values[i];
+                float value = input[i];
                 int typeIndex;
 
                 // Floats are the largest type to represent.
@@ -164,7 +126,7 @@ namespace EppNet.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual bool WriteArray(ref BytePayloadWriter writer, T[] input, bool absolute = true)
+        public virtual bool WriteArray(ref BytePayloadWriter writer, TNative[] input, bool absolute = true)
         {
             if (input == null)
             {
@@ -194,15 +156,19 @@ namespace EppNet.Data
             return written;
         }
 
-        public bool Write(ref BytePayloadWriter writer, T input, bool absolute = true)
+        public bool Write(ref BytePayloadWriter writer, TNative input, bool absolute = true)
         {
             byte header = 0;
+            TAdapter adapter = DefaultAdapter.FromNative(input);
+            bool isUniform = adapter.AllComponentsEqual();
+
             if (input.Equals(Default) ||
                 input.Equals(UnitX) ||
                 input.Equals(UnitY) ||
                 input.Equals(UnitZ) ||
                 input.Equals(UnitW) ||
-                input.Equals(One))
+                input.Equals(One) ||
+                isUniform)
             {
                 if (input.Equals(Default))
                     header = 0;
@@ -224,15 +190,15 @@ namespace EppNet.Data
                 else if (input.Equals(UnitW))
                     header = UnitWHeader;
 
+                else if (isUniform)
+                    header = UniformHeader;
+
                 header |= (byte)(absolute ? 128 : 0);
                 writer.WriteByte(header);
                 return true;
             }
 
-            Span<float> floats = stackalloc float[NumComponents];
-            ExtractFloatComponents(input, floats);
-
-            HeaderData data = _Internal_CreateHeaderWithType(input, true, absolute);
+            HeaderData data = _Internal_CreateHeaderWithType(adapter, true, absolute);
             bool written = true;
 
             header = data.Header;
@@ -242,21 +208,22 @@ namespace EppNet.Data
             {
                 byte components = 0;
 
-                for (int i = 0; i < NumComponents; i++)
+                for (int i = 0; i < adapter.NumComponents; i++)
                 {
-                    if (floats[i] != 0)
+                    // State which components are being sent
+                    if (adapter[i] != 0)
                         components |= (byte)(1 << i);
                 }
 
-                byte shifted = (byte) ((components & 0b111111) << 2);
+                byte shifted = (byte)((components & 0b111111) << 2);
                 header |= shifted;
             }
 
             ByteResolver.Instance.Write(ref writer, header);
 
-            for (int i = 0; i < NumComponents; i++)
+            for (int i = 0; i < adapter.NumComponents; i++)
             {
-                float value = floats[i];
+                float value = adapter[i];
 
                 if (!absolute && value == 0)
                     continue;
@@ -276,7 +243,7 @@ namespace EppNet.Data
             return written;
         }
 
-        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out T output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out TNative output)
         {
             bool read = reader.TryReadByte(out byte header);
             output = Default;
@@ -290,7 +257,7 @@ namespace EppNet.Data
             int components = (header >> 2) & 0b1111;
 
             // Check if we received a special value. Negate the first bit
-            T? fetched = (header & 0b01111111) switch
+            TNative? fetched = (header & 0b01111111) switch
             {
                 0 => Default,
                 UnitXHeader => UnitX,
@@ -306,8 +273,9 @@ namespace EppNet.Data
             ReadResult readResult = ReadResult.Success;
 
             output = new();
+            TAdapter adapter = new();
 
-            for (int i = 0; i < NumComponents; i++)
+            for (int i = 0; i < adapter.NumComponents; i++)
             {
 
                 // If this isn't an absolute update, we were only sent
@@ -327,7 +295,8 @@ namespace EppNet.Data
                 if (!readResult.IsSuccess())
                     return readResult;
 
-                output = Put(output, value, i);
+                adapter[i] = value;
+                AdapterUtils.PutComponent<TAdapter, float, TNative>(adapter, i, value);
             }
 
             if (readResult.IsSuccess())
@@ -336,10 +305,8 @@ namespace EppNet.Data
             return readResult;
         }
 
-        protected override bool _Internal_Write(ref BytePayloadWriter writer, T input) =>
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, TNative input) =>
             Write(ref writer, input, absolute: true);
-
-        public abstract T Put(T input, float value, int index);
 
     }
 
