@@ -3,23 +3,17 @@
 /// Date: July 9, 2024
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
-using ENet;
 
-using EppNet.Attributes;
 using EppNet.Data;
-using EppNet.Data.Datagrams;
 using EppNet.Exceptions;
+using EppNet.IO;
 using EppNet.Logging;
-using EppNet.Registers;
 using EppNet.Services;
-using EppNet.Settings;
 using EppNet.Sockets;
-using EppNet.Utilities;
 
 using Serilog;
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace EppNet.Node
@@ -30,7 +24,7 @@ namespace EppNet.Node
     /// 
     /// </summary>
 
-    public class NetworkNode : ILoggable, IEquatable<NetworkNode>, IDataHolder, INameable
+    public class NetworkNode : ILoggable, IEquatable<NetworkNode>, INameable
     {
 
         public ILoggable Notify { get => this; }
@@ -109,8 +103,6 @@ namespace EppNet.Node
             }
         }
 
-        public Configuration Configuration { get; }
-
         public NodeDataStorage DataStorage { get; }
 
         internal ServiceManager _serviceMgr;
@@ -143,8 +135,6 @@ namespace EppNet.Node
             // Let's try to register this
             if (!NetworkNodeManager._Internal_TryRegisterNode(this, out _index))
                 throw new InvalidOperationException("Node has already been added!");
-
-            this.Configuration = new(this);
         }
 
         public NetworkNode(Distribution distro) : this(string.Empty, distro, ExceptionStrategy.ThrowAll, null, null) { }
@@ -152,6 +142,15 @@ namespace EppNet.Node
         public NetworkNode(string name, Distribution distro) : this(name, distro, ExceptionStrategy.ThrowAll, null, null) { }
 
         ~NetworkNode() => Dispose(false);
+
+        /// <summary>
+        /// Rents a <see cref="BytePayload"/> with the specified capacity in bytes.<br/>
+        /// -1 implies the default capacity defined by <see cref="BytePayloadPool.DefaultCapacity"/>
+        /// </summary>
+        /// <param name="capacity"></param>
+        /// <returns></returns>
+        public BytePayload RentPayload(int capacity = -1) =>
+            DataStorage.PayloadPool.Rent(capacity);
 
         public void Dispose(bool disposing)
         {
@@ -162,7 +161,7 @@ namespace EppNet.Node
             Services.Dispose(disposing);
 
             // Ensure our custom data is cleaned up
-            IDataHolder.DeleteAllData(this);
+            DataStorage.Dispose();
         }
 
         public void Dispose() => Dispose(true);
@@ -177,55 +176,9 @@ namespace EppNet.Node
         public bool TryStart()
         {
 
-            // Let's ensure our expression trees are ready.
-            DatagramRegister dgRegister = DatagramRegister.Get();
-            ObjectRegister objRegister = ObjectRegister.Get();
-            Stopwatch stopwatch = null;
+            
 
-            if (!dgRegister.IsCompiled())
-            {
-                stopwatch = Stopwatch.StartNew();
-                Notify.Verbose("Compiling Datagram expression trees... Please wait.");
-
-                CompilationResult result = dgRegister.Compile();
-
-                if (!result.Successful)
-                {
-                    Notify.Fatal("Compilation of Datagram expression trees failed!");
-                    throw result.Error;
-                }
-
-                Notify.Info(new TemplatedMessage("Successfully compiled Datagram expression trees in {time} ms", stopwatch.ElapsedMilliseconds));
-            }
-
-
-            if (!objRegister.IsCompiled())
-            {
-                stopwatch?.Restart();
-                Notify.Verbose("Looking up objects w/NetworkObjectAttribute...");
-                AttributeFetcher.AddType<NetworkObjectAttribute>(type =>
-                {
-                    bool isValid = type.IsClass && typeof(ISimUnit).IsAssignableFrom(type);
-
-                    if (!isValid)
-                        Notify.Error($"[{type.Name}] Invalid use of NetworkObjectAttribute. Provided type does not extend ISimUnit!!");
-
-                    return isValid;
-                });
-
-                Notify.Verbose("Compiling Object expression trees... Please wait.");
-
-                CompilationResult result = objRegister.Compile();
-
-                if (!result.Successful)
-                {
-                    Notify.Fatal("Compilation of Object expression trees failed!");
-                    throw result.Error;
-                }
-
-                Notify.Info(new TemplatedMessage("Successfully compiled Object expression trees in {time} ms", stopwatch.ElapsedMilliseconds));
-            }
-
+            /*
             // Try to create our socket
             if (Socket.Create())
             {
@@ -245,7 +198,7 @@ namespace EppNet.Node
                     Notify.Error("Failed to start!");
                     HandleException(ex);
                 }
-            }
+            }*/
 
             return false;
         }
@@ -283,10 +236,10 @@ namespace EppNet.Node
                 return false;
             }
 
-            if (Configuration.Dirty)
+            if (DataStorage.Configuration.Dirty)
             {
-                Configuration.WriteAsync();
-                Configuration.Dirty = false;
+                DataStorage.Configuration.WriteAsync();
+                DataStorage.Configuration.Dirty = false;
             }
 
             Socket.Tick(delta);
@@ -321,7 +274,7 @@ namespace EppNet.Node
             Started = false;
 
             // Let's ensure we write the configuration fully before we halt
-            Configuration.AsyncWriteTask?.Wait();
+            DataStorage.Configuration.AsyncWriteTask?.Wait();
 
             Notify.Debug("Stopped!");
             
@@ -360,50 +313,16 @@ namespace EppNet.Node
             }
         }
 
-        public bool Send(byte[] bytes, byte channelId, PacketFlags flags)
-            => Socket.ChannelService?.TrySendDataTo(Socket.Companion.ENet_Peer, channelId, bytes, flags) == true;
+        public bool Equals(NetworkNode other) =>
+            other?.UUID.Equals(UUID) ?? false;
 
-        /// <summary>
-        /// Packages a <see cref="IDatagram"/> (Calls <see cref="IDatagram.Pack"/>) and
-        /// sends it with the specified <see cref="PacketFlags"/>.
-        /// </summary>
-        /// <param name="datagram"></param>
-        /// <param name="flags"></param>
-
-        public bool Send(IDatagram datagram, PacketFlags flags)
-        {
-            bool sent = Socket.ChannelService?.TrySendTo(Socket.Companion.ENet_Peer, datagram, flags) == true;
-
-            if (sent)
-                Notify.Debug($"Successfully sent Datagram {datagram.GetType().Name} to Peer {Socket.Companion.ENet_ID}");
-            else
-                Notify.Debug($"Failed to send Datagram {datagram.GetType().Name} to Peer {Socket.Companion.ENet_ID}");
-
-            return sent;
-        }
-
-        /// <summary>
-        /// Sends a <see cref="IDatagram"/> with <see cref="PacketFlags.Instant"/>.
-        /// </summary>
-        /// <param name="datagram"></param>
-
-        public bool SendInstant(IDatagram datagram) => Send(datagram, PacketFlags.Instant);
-
-        public bool Equals(NetworkNode other)
-        {
-            if (other == null)
-                return false;
-
-            return other.UUID.Equals(this.UUID);
-        }
-
-        public override bool Equals(object obj)
-            => obj is NetworkNode other && Equals(other);
+        public override bool Equals(object obj) =>
+            obj is NetworkNode other && Equals(other);
 
         public override int GetHashCode()
         {
             int hashCode = _index + UUID.GetHashCode();
-            hashCode ^= (_index + 1);
+            hashCode ^= _index + 1;
             return hashCode;
         }
 

@@ -5,10 +5,10 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Data;
+using EppNet.IO;
 using EppNet.Node;
+using EppNet.Settings;
 using EppNet.Utilities;
-using Gee.External.Capstone.Arm64;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ using System.Runtime.CompilerServices;
 /// Sandboxed storage for each <see cref="NetworkNode"/>
 /// </summary>
 
-public sealed class NodeDataStorage : INodeDescendant
+public sealed class NodeDataStorage : INodeDescendant, IDisposable
 {
 
     public static List<Type> SupportedCollectionTypes =>
@@ -46,6 +46,10 @@ public sealed class NodeDataStorage : INodeDescendant
 
     public IReadOnlyDictionary<ushort, Type> ResolverId2Types => _resolverId2Type;
     public IReadOnlyDictionary<Type, IResolver> ResolverType2Classes => _resolverType2Class;
+
+    public BytePayloadPool PayloadPool { get; }
+    public Configuration Configuration { get; }
+
     private readonly Dictionary<ushort, Type> _resolverId2Type;
     private readonly Dictionary<Type, IResolver> _resolverType2Class;
 
@@ -57,6 +61,9 @@ public sealed class NodeDataStorage : INodeDescendant
     internal NodeDataStorage(NetworkNode node)
     {
         this.Node = node ?? throw new ArgumentNullException(nameof(node));
+        this.Configuration = new(node);
+        this.PayloadPool = new(node, defaultCapacity: 64);
+
         this._resolverId2Type = new();
         this._resolverType2Class = new();
         this._customDataMap = new();
@@ -242,5 +249,11 @@ public sealed class NodeDataStorage : INodeDescendant
 
     public bool HasCustomData([NotNull] IDataHolder dataHolder) =>
         dataHolder is not null && _customDataMap.TryGetValue(dataHolder, out _);
+
+    public void Dispose()
+    {
+        PayloadPool.Clear();
+        _customDataMap.Clear();
+    }
 
 }
