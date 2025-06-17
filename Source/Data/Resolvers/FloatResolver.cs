@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
+using EppNet.IO;
 using EppNet.Utilities;
 
 using System;

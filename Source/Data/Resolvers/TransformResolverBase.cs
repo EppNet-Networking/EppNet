@@ -4,6 +4,8 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.IO;
+
 using System;
 
 namespace EppNet.Data
@@ -24,7 +26,6 @@ namespace EppNet.Data
         /// </summary>
         public const byte IdentityHeader = 32;
 
-        public abstract TransformAdapter<TVector, TQuaternion> ToAdapter(in TTransform transform);
 
     }
 

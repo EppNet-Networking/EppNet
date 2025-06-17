@@ -5,10 +5,9 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
+using EppNet.IO;
 
-using System;
 using System.Buffers.Binary;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 

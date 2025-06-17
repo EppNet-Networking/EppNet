@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
+using EppNet.IO;
 
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;

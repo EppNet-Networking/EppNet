@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
+using EppNet.IO;
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
