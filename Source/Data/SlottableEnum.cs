@@ -7,17 +7,31 @@
 using EppNet.Utilities;
 
 using System;
-using System.Collections;
+using System.Collections.Generic;
 
 namespace EppNet.Data
 {
 
-    public struct SlottableEnum : IEquatable<SlottableEnum>, INameable, IConvertible, IComparable, IFormattable
+    public sealed class SlottableGroup
+    {
+        public IReadOnlyList<SlottableEnum> Enums => _enums;
+        public int Count => _enums.Count;
+
+        private readonly List<SlottableEnum> _enums = new();
+
+        internal void Add(SlottableEnum sEnum) =>
+            _enums.Add(sEnum);
+
+        internal bool Contains(SlottableEnum sEnum) =>
+            _enums.Contains(sEnum);
+    }
+
+    public readonly struct SlottableEnum : IEquatable<SlottableEnum>, INameable, IConvertible, IComparable, IFormattable
     {
 
         #region Static access and operators
 
-        internal static SlottableEnum _Internal_CreateAndAddTo(IList group, string name, uint slot)
+        internal static SlottableEnum _Internal_CreateAndAddTo(SlottableGroup group, string name, uint slot)
         {
             Guard.AgainstNull(group);
             int index = group.Count;
@@ -70,12 +84,12 @@ namespace EppNet.Data
 
         #endregion
 
-        public IList Group { internal set; get; }
-        public string Name { set; get; }
-        public uint Slot { internal set; get; }
-        public int Value { internal set; get; }
+        public SlottableGroup Group { get; }
+        public string Name { get; }
+        public uint Slot { get; }
+        public int Value { get; }
 
-        internal SlottableEnum(IList group, string name, uint slot, int value)
+        internal SlottableEnum(SlottableGroup group, string name, uint slot, int value)
         {
             this.Group = group;
             this.Name = name;
@@ -138,10 +152,11 @@ namespace EppNet.Data
             return 1;
         }
 
-        public readonly string ToString(string format, IFormatProvider formatProvider) => string.Format(formatProvider, format, Name);
+        public readonly string ToString(string format, IFormatProvider formatProvider) =>
+            string.Format(formatProvider, format, Name);
 
-        public readonly bool Equals(SlottableEnum other) => Name.Equals(other.Name, StringComparison.Ordinal)
-            && Group == other.Group && Slot == other.Slot && Value == other.Value;
+        public readonly bool Equals(SlottableEnum other) =>
+            Group == other.Group && Slot == other.Slot && Value == other.Value;
 
         public override readonly bool Equals(object obj)
         {
@@ -150,14 +165,20 @@ namespace EppNet.Data
 
             return false;
         }
+
         public override readonly int GetHashCode()
         {
-            int hashCode = (Group?.GetHashCode()) ?? 0;
-            hashCode ^= Name.GetHashCode();
+            int hashCode = Group?.GetHashCode() ?? 0;
+            hashCode ^= Name?.GetHashCode() ?? 0;
             hashCode ^= Slot.GetHashCode();
             hashCode ^= Value.GetHashCode();
             return hashCode;
         }
+
+        public override string ToString() =>
+            Name is not null 
+                ? string.Format("Name: {0} [Slot: {1} Value: {2}]", Name, Slot, Value)
+                : string.Format("Name: Unnamed [Slot: {1}, Value: {2}]", Slot, Value);
 
     }
 
