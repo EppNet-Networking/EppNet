@@ -13,6 +13,7 @@ namespace EppNet.Connections
     public static class DisconnectReasons
     {
         internal static List<DisconnectReason> _reasons = new();
+        internal static object _lock = new();
 
         public static readonly DisconnectReason Unknown = new("Connection to the remote host was lost.");
         public static readonly DisconnectReason TimedOut = new("Connection to the remote host has timed out.");
@@ -21,7 +22,7 @@ namespace EppNet.Connections
 
         public static DisconnectReason GetFromID(byte id)
         {
-            int index = (int)id;
+            int index = id;
 
             if (-1 < index && index < _reasons.Count)
                 return _reasons[index];
@@ -52,7 +53,8 @@ namespace EppNet.Connections
             this.ID = (byte) DisconnectReasons._reasons.Count;
             this.Message = message;
 
-            DisconnectReasons._reasons.Add(new DisconnectReason(message));
+            lock (DisconnectReasons._lock)
+                DisconnectReasons._reasons.Add(this);
         }
 
         internal DisconnectReason(byte id, string message)
@@ -61,7 +63,9 @@ namespace EppNet.Connections
             this.Message = message;
         }
 
-        public bool Equals(DisconnectReason other) => ID == other.ID && Message.Equals(other.Message, StringComparison.Ordinal);
+        public bool Equals(DisconnectReason other) =>
+            ID == other.ID &&
+            Message.Equals(other.Message, StringComparison.Ordinal);
 
         public override bool Equals(object obj)
         {
