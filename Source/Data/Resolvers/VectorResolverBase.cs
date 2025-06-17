@@ -131,10 +131,10 @@ namespace EppNet.Data
         {
             byte header = 0;
 
-            Span<float> floats = stackalloc float[NumComponents];
-            CopyTo(in input, floats);
+            Span<float> values = stackalloc float[NumComponents];
+            CopyTo(in input, values);
 
-            bool isUniform = FastMath.AllComponentsEqual(floats);
+            bool isUniform = FastMath.AllComponentsEqual(values);
 
             if (input.Equals(Default) ||
                 input.Equals(UnitX) ||
@@ -172,7 +172,7 @@ namespace EppNet.Data
                 return true;
             }
 
-            HeaderData data = _Internal_CreateHeaderWithType(ref floats, true, absolute);
+            HeaderData data = _Internal_CreateHeaderWithType(ref values, true, absolute);
             bool written = true;
 
             header = data.Header;
@@ -185,7 +185,7 @@ namespace EppNet.Data
                 for (int i = 0; i < NumComponents; i++)
                 {
                     // State which components are being sent
-                    if (floats[i] != 0)
+                    if (values[i] != 0)
                         components |= (byte)(1 << i);
                 }
 
@@ -197,7 +197,7 @@ namespace EppNet.Data
 
             for (int i = 0; i < NumComponents; i++)
             {
-                int value = FastMath.QuantizeToInt(floats[i], 4);
+                int value = FastMath.QuantizeToInt(values[i], 4);
 
                 if (!absolute && value == 0)
                     continue;

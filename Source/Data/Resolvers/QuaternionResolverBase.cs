@@ -54,7 +54,9 @@ namespace EppNet.Data
 
             // We didn't have the easy way out. Consider the most significant bit.
             bool negative = (header & (1 << 7)) != 0;
-            int largestIndex = BitOperations.TrailingZeroCount(negative ? (byte)(header & ~(1 << 7)) : header);
+            int largestIndex = BitOperations.Log2((byte)(header & 0b01111111));
+
+            //BitOperations.TrailingZeroCount(negative ? (byte)(header & ~(1 << 7)) : header);
             Span<float> components = stackalloc float[4];
 
             for (int i = 0; i < components.Length; i++)
