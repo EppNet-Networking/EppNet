@@ -4,6 +4,8 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.IO;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

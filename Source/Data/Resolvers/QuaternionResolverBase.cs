@@ -4,10 +4,12 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.IO;
+using EppNet.Utilities;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using EppNet.Utilities;
 
 namespace EppNet.Data
 {

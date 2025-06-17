@@ -7,6 +7,8 @@
 using EppNet.Data;
 using EppNet.Node;
 using EppNet.Utilities;
+using Gee.External.Capstone.Arm64;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using System;
 using System.Collections.Generic;
@@ -19,6 +21,26 @@ using System.Runtime.CompilerServices;
 
 public sealed class NodeDataStorage : INodeDescendant
 {
+
+    public static List<Type> SupportedCollectionTypes =>
+        new()
+        {
+            typeof(List<>),
+            typeof(HashSet<>),
+            typeof(SortedSet<>),
+            typeof(LinkedList<>)
+        };
+
+    public static bool IsSupportedCollectionType(Type type)
+    {
+        foreach (Type collType in SupportedCollectionTypes)
+        {
+            if (type == collType)
+                return true;
+        }
+
+        return false;
+    }
 
     public NetworkNode Node { get; }
 
@@ -70,11 +92,35 @@ public sealed class NodeDataStorage : INodeDescendant
     /// <param name="resolver"></param>
     /// <returns>The located <see cref="IResolver"/> or null</returns>
 
-    public bool TryGetResolver<T>(out IResolver resolver)
+    public bool TryGetResolver(Type type, out IResolver resolver)
     {
-        bool located = _resolverType2Class.TryGetValue(typeof(T), out resolver);
+        if (type.IsArray)
+            type = type.GetElementType();
+
+        else if (type.IsEnum)
+            type = type.GetEnumUnderlyingType();
+
+        else if (type.IsGenericType)
+        {
+            Type genericType = type.GetGenericTypeDefinition();
+
+            if (IsSupportedCollectionType(genericType))
+                type = type.GetGenericArguments()[0];
+        }
+
+        bool located = _resolverType2Class.TryGetValue(type, out resolver);
         return located;
     }
+
+    /// <summary>
+    /// Tries to fetch the <see cref="IResolver"/> class for the specified type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="resolver"></param>
+    /// <returns>The located <see cref="IResolver"/> or null</returns>
+
+    public bool TryGetResolver<T>(out IResolver resolver) =>
+        TryGetResolver(typeof(T), out resolver);
 
     /// <summary>
     /// Tries to fetch the ID associated with the type with a resolver.

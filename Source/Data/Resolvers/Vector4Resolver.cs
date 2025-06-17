@@ -5,8 +5,9 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
-using System;
+using EppNet.IO;
 
+using System;
 using System.Numerics;
 
 namespace EppNet.Data
