@@ -5,19 +5,19 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
-
+using System;
 using System.Numerics;
 
 namespace EppNet.Data
 {
 
     [NetworkTypeResolver]
-    public class Vector2Resolver : VectorResolverBase<Vector2Adapter, Vector2>
+    public class Vector2Resolver : VectorResolverBase<Vector2>
     {
 
         public static readonly Vector2Resolver Instance = new();
 
-        public Vector2Resolver() : base(autoAdvance: false)
+        public Vector2Resolver() : base(numComponents: 2, autoAdvance: false)
         {
             this.Default = Vector2.Zero;
             this.UnitX = Vector2.UnitX;
@@ -26,6 +26,16 @@ namespace EppNet.Data
             this.One = Vector2.One;
         }
 
+        public override void CopyTo(in Vector2 native, Span<float> data)
+        {
+            data[0] = native.X;
+            data[1] = native.Y;
+        }
+
+        public override Vector2 ToNative(Span<float> data) =>
+            data.Length == NumComponents ?
+                new(data[0], data[1]) :
+                Vector2.Zero;
     }
 
     public static class Vector2ResolverExtensions

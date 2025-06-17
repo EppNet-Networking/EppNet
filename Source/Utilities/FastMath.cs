@@ -6,6 +6,7 @@
 /// https://stackoverflow.com/a/48448292
 ///////////////////////////////////////////////////////
 using System;
+using System.Runtime.CompilerServices;
 
 namespace EppNet.Utilities
 {
@@ -68,6 +69,40 @@ namespace EppNet.Utilities
         }
 
         /// <summary>
+        /// Maps a floating point number from [-1, 1] to [0, 255]<br/>
+        /// <b>NOTE:</b> Input float must be normalized!
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>Byte in domain [0, 255]</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte QuantizeToByte(float input)
+        {
+            float clamped = Math.Clamp((input + 1f) * ByteQuantizer, 0f, 255f);
+            return (byte) Math.Round(clamped);
+        }
+
+        /// <summary>
+        /// Maps a byte value from [0, 255] back to [-1, 1]
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>Float in domain [-1, 1]</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float DequantizeByte(this byte b) =>
+            _dequantizeTable[b];
+
+        public static int QuantizeToInt(float value, int decimals)
+        {
+            double scale = GetTenPow(decimals);
+            return (int)Math.Round(value * scale);
+        }
+
+        public static float DequantizeInt(int quantized, int decimals)
+        {
+            double scale = GetTenPow(decimals);
+            return (float)(quantized / scale);
+        }
+
+        /// <summary>
         /// Rounds the specified number to the specified decimal places<br/>
         /// - Rounding to 0 decimal places returns 1
         /// - Rounding to <0 decimal places returns the provided number
@@ -106,8 +141,74 @@ namespace EppNet.Utilities
             return result;
         }
 
-        public static float Dequantize(this byte b) =>
-            _dequantizeTable[b];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Quaternion_ApproximatelyEquals(
+            float aX, float aY, float aZ, float aW,
+            float bX, float bY, float bZ, float bW,
+            float epsilon = QuaternionEpsilon)
+        {
+            float dot = (aX * bX) + (aY * bY) + (aZ * bZ) + (aW * bW);
+            return MathF.Abs(dot) > 1f - epsilon;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Quaternion_Length(float x, float y, float z, float w)
+        {
+            float dotProd = (x * x) + (y * y) + (z * z) + (w * w);
+            return MathF.Sqrt(dotProd);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<float> Quaternion_Normalize(ref Span<float> data)
+        {
+            if (data.Length != 4)
+            {
+                data.Clear();
+                return data;
+            }
+
+            float length = Quaternion_Length(data[0], data[1], data[2], data[3]);
+
+            if (length < QuaternionEpsilon)
+            {
+                data.Clear();
+                return data;
+            }
+
+            for (int i = 0; i < data.Length; i++)
+                    data[i] /= length;
+
+            return data;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AllComponentsEqual(Span<float> values)
+        {
+            float first = values[0];
+            for (int i = 1; i < values.Length; i++)
+            {
+                if (values[i] != first)
+                    return false;
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (float, float, float, float) Quaternion_Normalize(float x, float y, float z, float w)
+        {
+            float length = Quaternion_Length(x, y, z, w);
+
+            if (length < QuaternionEpsilon)
+                return (0, 0, 0, 1);
+
+            return
+            (
+                x / length,
+                y / length,
+                z / length,
+                w / length
+            );
+        }
 
         public static bool TryCastToFloat<T>(T value, out float result)
         {

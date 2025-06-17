@@ -6,13 +6,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using EppNet.Utilities;
 
 namespace EppNet.Data
 {
 
-    public abstract class VectorResolverBase<TAdapter, TNative> : Resolver<TNative>
-        where TAdapter : struct, IAdapter<TAdapter, float, TNative>
-        where TNative : struct, IEquatable<TNative>
+    public abstract class VectorResolverBase<TNative> : AdaptiveResolverBase<TNative, float>
     {
 
         /// <summary>
@@ -50,22 +49,20 @@ namespace EppNet.Data
         /// </summary>
         public TNative Default { protected set; get; }
 
-        public static TAdapter DefaultAdapter => new();
-
         public TNative UnitX { protected set; get; }
         public TNative UnitY { protected set; get; }
         public TNative UnitZ { protected set; get; }
         public TNative UnitW { protected set; get; }
         public TNative One { protected set; get; }
 
-        protected VectorResolverBase(bool autoAdvance = true) : base(autoAdvance) { }
+        protected VectorResolverBase(int numComponents, bool autoAdvance = true) : base(numComponents, autoAdvance) { }
 
-        protected VectorResolverBase(int size, bool autoAdvance = true) : base(size, autoAdvance) { }
+        protected VectorResolverBase(int numComponents, int size, bool autoAdvance = true) : base(numComponents, size, autoAdvance) { }
 
-        protected VectorResolverBase(int size) : base(size) { }
+        protected VectorResolverBase(int numComponents, int size) : base(numComponents, size) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected HeaderData _Internal_CreateHeaderWithType(TAdapter input, bool signed = false, bool absolute = true)
+        protected HeaderData _Internal_CreateHeaderWithType(ref Span<float> components, bool signed = false, bool absolute = true)
         {
             int largestTypeIndex = 0;
 
@@ -75,48 +72,22 @@ namespace EppNet.Data
             // 2 -> uint or int
             // 3 -> float
 
-            for (int i = 0; i < input.NumComponents; i++)
+            for (int i = 0; i < NumComponents; i++)
             {
-                float value = input[i];
-                int typeIndex;
+                float value = components[i];
+                int typeIndex = 0;
 
-                // Floats are the largest type to represent.
-                if (value % 1 != 0)
-                {
-                    // We must use floats for all.
-                    largestTypeIndex = 3;
-                    break;
-                }
+                int quantized = FastMath.QuantizeToInt(value, 4);
 
-                if (signed)
-                {
-                    if (sbyte.MinValue <= value && value <= sbyte.MaxValue)
-                        typeIndex = 0;
+                if (sbyte.MinValue <= quantized && quantized <= sbyte.MaxValue)
+                    typeIndex = 0;
 
-                    else if (ushort.MinValue <= value && value <= ushort.MaxValue)
-                        typeIndex = 1;
+                else if (short.MinValue <= quantized && quantized <= short.MaxValue)
+                    typeIndex = 1;
 
-                    else if (uint.MinValue <= value && value <= uint.MaxValue)
-                        typeIndex = 2;
-
-                    else
-                        typeIndex = 3;
-                }
-                else
-                {
-                    if (byte.MinValue <= value && value <= byte.MaxValue)
-                        typeIndex = 0;
-
-                    else if (short.MinValue <= value && value <= short.MaxValue)
-                        typeIndex = 1;
-
-                    else if (int.MinValue <= value && value <= int.MaxValue)
-                        typeIndex = 2;
-
-                    else
-                        typeIndex = 3;
-                }
-
+                else if (int.MinValue <= quantized && quantized <= int.MaxValue)
+                    typeIndex = 2;
+                    
                 if (typeIndex > largestTypeIndex)
                     largestTypeIndex = typeIndex;
             }
@@ -159,8 +130,11 @@ namespace EppNet.Data
         public bool Write(ref BytePayloadWriter writer, TNative input, bool absolute = true)
         {
             byte header = 0;
-            TAdapter adapter = DefaultAdapter.FromNative(input);
-            bool isUniform = adapter.AllComponentsEqual();
+
+            Span<float> floats = stackalloc float[NumComponents];
+            CopyTo(in input, floats);
+
+            bool isUniform = FastMath.AllComponentsEqual(floats);
 
             if (input.Equals(Default) ||
                 input.Equals(UnitX) ||
@@ -198,7 +172,7 @@ namespace EppNet.Data
                 return true;
             }
 
-            HeaderData data = _Internal_CreateHeaderWithType(adapter, true, absolute);
+            HeaderData data = _Internal_CreateHeaderWithType(ref floats, true, absolute);
             bool written = true;
 
             header = data.Header;
@@ -208,10 +182,10 @@ namespace EppNet.Data
             {
                 byte components = 0;
 
-                for (int i = 0; i < adapter.NumComponents; i++)
+                for (int i = 0; i < NumComponents; i++)
                 {
                     // State which components are being sent
-                    if (adapter[i] != 0)
+                    if (floats[i] != 0)
                         components |= (byte)(1 << i);
                 }
 
@@ -221,9 +195,9 @@ namespace EppNet.Data
 
             ByteResolver.Instance.Write(ref writer, header);
 
-            for (int i = 0; i < adapter.NumComponents; i++)
+            for (int i = 0; i < NumComponents; i++)
             {
-                float value = adapter[i];
+                int value = FastMath.QuantizeToInt(floats[i], 4);
 
                 if (!absolute && value == 0)
                     continue;
@@ -232,7 +206,7 @@ namespace EppNet.Data
                 {
                     0 => SByteResolver.Instance.Write(ref writer, (sbyte)value),
                     1 => ShortResolver.Instance.Write(ref writer, (short)value),
-                    2 => Int32Resolver.Instance.Write(ref writer, (int)value),
+                    2 => Int32Resolver.Instance.Write(ref writer, value),
                     _ => FloatResolver.Instance.Write(ref writer, value)
                 };
 
@@ -255,35 +229,63 @@ namespace EppNet.Data
             int typeIndex = header & 0b11;
 
             int components = (header >> 2) & 0b1111;
+            int specialValue = header & 0b01111111;
 
-            // Check if we received a special value. Negate the first bit
-            TNative? fetched = (header & 0b01111111) switch
+            TNative fetched = default;
+            bool located = false;
+
+            switch (specialValue)
             {
-                0 => Default,
-                UnitXHeader => UnitX,
-                UnitYHeader => UnitY,
-                UnitZHeader => UnitZ,
-                UnitWHeader => UnitW,
-                _ => null
-            };
 
-            if (fetched.HasValue)
-                return absolute ? ReadResult.Success : ReadResult.SuccessDelta;
+                case 0:
+                    fetched = Default;
+                    located = true;
+                    break;
+                
+                case UnitXHeader:
+                    fetched = UnitX;
+                    located = true;
+                    break;
+                
+                case UnitYHeader:
+                    fetched = UnitY;
+                    located = true;
+                    break;
+
+                case UnitZHeader:
+                    fetched = UnitZ;
+                    located = true;
+                    break;
+                
+                case UnitWHeader:
+                    fetched = UnitW;
+                    located = true;
+                    break;
+
+                case OneHeader:
+                    fetched = One;
+                    located = true;
+                    break;
+                
+                default:
+                    break;
+
+            }
+
+            if (located)
+            {
+                output = fetched;
+                return absolute ?
+                    ReadResult.Success :
+                    ReadResult.SuccessDelta;
+            }
 
             ReadResult readResult = ReadResult.Success;
+            Span<float> values = stackalloc float[NumComponents];
 
-            output = new();
-            TAdapter adapter = new();
-
-            for (int i = 0; i < adapter.NumComponents; i++)
+            if (specialValue == UniformHeader)
             {
-
-                // If this isn't an absolute update, we were only sent
-                // components with a bit enabled.
-                if (!absolute && ((byte)components & (1 << i)) == 0)
-                    continue;
-
-                float value;
+                int value;
                 readResult = typeIndex switch
                 {
                     0 => SByteResolver.Instance.ReadAs(ref reader, out value),
@@ -295,13 +297,41 @@ namespace EppNet.Data
                 if (!readResult.IsSuccess())
                     return readResult;
 
-                adapter[i] = value;
-                AdapterUtils.PutComponent<TAdapter, float, TNative>(adapter, i, value);
+                float result = FastMath.DequantizeInt(value, 4);
+
+                for (int i = 0; i < NumComponents; i++)
+                    values[i] = result;
+            }
+            else
+            {
+                for (int i = 0; i < NumComponents; i++)
+                {
+
+                    // If this isn't an absolute update, we were only sent
+                    // components with a bit enabled.
+                    if (!absolute && ((byte)components & (1 << i)) == 0)
+                        continue;
+
+                    int value;
+                    readResult = typeIndex switch
+                    {
+                        0 => SByteResolver.Instance.ReadAs(ref reader, out value),
+                        1 => ShortResolver.Instance.ReadAs(ref reader, out value),
+                        2 => Int32Resolver.Instance.ReadAs(ref reader, out value),
+                        _ => FloatResolver.Instance.ReadAs(ref reader, out value)
+                    };
+
+                    if (!readResult.IsSuccess())
+                        return readResult;
+
+                    values[i] = FastMath.DequantizeInt(value, 4);
+                }
             }
 
             if (readResult.IsSuccess())
                 readResult = absolute ? ReadResult.Success : ReadResult.SuccessDelta;
 
+            output = ToNative(values);
             return readResult;
         }
 

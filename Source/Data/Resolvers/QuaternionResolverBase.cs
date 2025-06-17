@@ -7,11 +7,13 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using EppNet.Utilities;
 
 namespace EppNet.Data
 {
 
-    public abstract class QuaternionResolverBase<T> : Resolver<T> where T : struct, IEquatable<T>
+    public abstract class QuaternionResolverBase<TNative> : AdaptiveResolverBase<TNative, float>
+        where TNative : struct, IEquatable<TNative>
     {
         /// <summary>
         /// Whether or not to use byte quantization for packing Quaternions<br/>
@@ -29,18 +31,16 @@ namespace EppNet.Data
         /// </summary>
         public const byte ZeroHeader = 16;
 
-        public T Zero { protected set; get; }
-        public T Identity { protected set; get; }
+        public TNative Zero { protected set; get; }
+        public TNative Identity { protected set; get; }
 
-        public QuaternionAdapter ZeroAdapter { get; } = new(0, 0, 0, 0);
+        public new int NumComponents => 4;
 
-        public QuaternionAdapter IdentityAdapter { get; } = new(0, 0, 0, 1);
-
-        protected QuaternionResolverBase() : base(autoAdvance: false) { }
+        protected QuaternionResolverBase() : base(numComponents: 4, autoAdvance: false) { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out T output)
+        protected override ReadResult _Internal_Read(ref BytePayloadReader reader, out TNative output)
         {
             // Let's consider the header
             byte header = reader.ReadByte();
@@ -73,28 +73,22 @@ namespace EppNet.Data
                 }
 
                 // Byte dequantization
-                components[i] = QuaternionAdapter.Dequantize(reader.ReadByte());
+                components[i] = FastMath.DequantizeByte(reader.ReadByte());
             }
 
-            float sumOfSquares = 1.0f - (MathF.Pow(components[0], 2) + MathF.Pow(components[1], 2)
-                + MathF.Pow(components[2], 2) + MathF.Pow(components[3], 2));
+            float sumOfSquares = 1.0f - (
+                (components[0] * components[0]) +
+                (components[1] * components[1]) +
+                (components[2] * components[2]) +
+                (components[3] * components[3])
+            );
 
             // Generate the largest value
             components[largestIndex] = MathF.Sqrt(MathF.Max(0f, sumOfSquares)) * (negative ? -1 : 1);
 
-            QuaternionAdapter adapter = new(components[0],
-                components[1],
-                components[2],
-                components[3]);
-
-            output = FromAdapter(adapter);
+            output = ToNative(components);
             return ReadResult.Success;
         }
-
-        public abstract QuaternionAdapter ToAdapter(T input);
-
-        public abstract T FromAdapter(QuaternionAdapter adapter);
-
 
         /// <summary>
         /// This is an implementation of the Smallest Three algorithm<br/>
@@ -108,33 +102,39 @@ namespace EppNet.Data
         /// <returns></returns>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override bool _Internal_Write(ref BytePayloadWriter writer, T input)
+        protected override bool _Internal_Write(ref BytePayloadWriter writer, TNative input)
         {
 
-            QuaternionAdapter adaptedInput = ToAdapter(input);
+            Span<float> data = stackalloc float[NumComponents];
+            CopyTo(in input, data);
 
             // Identity and zero quats use a single byte
-            if (adaptedInput.ApproximatelyEquals(IdentityAdapter))
+
+            if (FastMath.Quaternion_ApproximatelyEquals(
+                0, 0, 0, 1,
+                data[0], data[1], data[2], data[3]))
             {
                 writer.WriteByte(IdentityHeader);
                 return true;
             }
 
-            if (adaptedInput.ApproximatelyEquals(ZeroAdapter))
+            if (FastMath.Quaternion_ApproximatelyEquals(
+                0, 0, 0, 0,
+                data[0], data[1], data[2], data[3]))
             {
                 writer.WriteByte(ZeroHeader);
                 return true;
             }
 
-            QuaternionAdapter normalized = QuaternionAdapter.Normalize(adaptedInput);
+            data = FastMath.Quaternion_Normalize(ref data);
 
             int largestIndex = 0;
-            float largest = MathF.Abs(normalized.X);
-            bool negative = normalized.X < 0;
+            float largest = MathF.Abs(data[0]);
+            bool negative = data[0] < 0;
 
-            for (int i = 1; i < 4; i++)
+            for (int i = 1; i < NumComponents; i++)
             {
-                float f = normalized[i];
+                float f = data[i];
                 float value = MathF.Abs(f);
 
                 if (value > largest)
@@ -170,18 +170,18 @@ namespace EppNet.Data
                     }
 
                     // Quantize the float into a byte
-                    bytes[byteIndex++] = QuaternionAdapter.Quantize(normalized[quatIndex++]);
+                    bytes[byteIndex++] = FastMath.QuantizeToByte(data[quatIndex++]);
                 }
             }
             else
             {
                 // Byte quantization is off. Let's send the floats
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < NumComponents; i++)
                 {
                     if (i == largestIndex)
-                        break;
+                        continue;
 
-                    FloatResolver.Instance.Write(ref writer, normalized[i]);
+                    FloatResolver.Instance.Write(ref writer, data[i]);
                 }
             }
 

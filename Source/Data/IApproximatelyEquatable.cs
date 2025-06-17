@@ -87,7 +87,7 @@ namespace EppNet.Data
         }
 
         public static bool ApproximatelyEquals<T>(this T a, T b, float epsilon = FastMath.Epsilon)
-            where T : IComparable<T>
+            where T : struct
         {
             if (a is float fa && b is float fb)
                 return MathF.Abs(fa - fb) <= epsilon;
@@ -95,7 +95,7 @@ namespace EppNet.Data
             if (a is double da && b is double db)
                 return Math.Abs(da - db) <= epsilon;
 
-            return a.CompareTo(b) == 0;
+            return false;
         }
 
         public static bool ApproximatelyEquals(this int a, int b, float epsilon = FastMath.Epsilon) =>

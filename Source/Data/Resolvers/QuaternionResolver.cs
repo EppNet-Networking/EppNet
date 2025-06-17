@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
+using System;
 
 using System.Numerics;
 
@@ -17,17 +18,24 @@ namespace EppNet.Data
 
         public static readonly QuaternionResolver Instance = new();
 
-        public QuaternionResolver()
+        public QuaternionResolver() : base()
         {
             this.Zero = new(0, 0, 0, 0);
-            this.Identity = Quaternion.Identity;
+            this.Identity = new(0, 0, 0, 1);
         }
 
-        public override Quaternion FromAdapter(QuaternionAdapter adapter) =>
-            adapter;
+        public override void CopyTo(in Quaternion quaternion, Span<float> data)
+        {
+            data[0] = quaternion.X;
+            data[1] = quaternion.Y;
+            data[2] = quaternion.Z;
+            data[3] = quaternion.W;
+        }
 
-        public override QuaternionAdapter ToAdapter(Quaternion input) =>
-            (QuaternionAdapter)input;
+        public override Quaternion ToNative(Span<float> data) =>
+            data.Length == NumComponents ?
+                new(data[0], data[1], data[2], data[3]) :
+                Quaternion.Identity;
     }
 
     public static class QuaternionResolverExtensions

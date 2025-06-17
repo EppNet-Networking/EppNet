@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.Attributes;
+using System;
 
 using System.Numerics;
 
@@ -13,12 +14,12 @@ namespace EppNet.Data
 
     [NetworkTypeResolver]
 
-    public class Vector4Resolver : VectorResolverBase<Vector4Adapter, Vector4>
+    public class Vector4Resolver : VectorResolverBase<Vector4>
     {
 
         public static readonly Vector4Resolver Instance = new();
 
-        public Vector4Resolver() : base(autoAdvance: false)
+        public Vector4Resolver() : base(numComponents: 4, autoAdvance: false)
         {
             this.Default = Vector4.Zero;
             this.UnitX = Vector4.UnitX;
@@ -28,6 +29,18 @@ namespace EppNet.Data
             this.One = Vector4.One;
         }
 
+        public override void CopyTo(in Vector4 native, Span<float> data)
+        {
+            data[0] = native.X;
+            data[1] = native.Y;
+            data[2] = native.Z;
+            data[3] = native.W;
+        }
+
+        public override Vector4 ToNative(Span<float> data) =>
+            data.Length == NumComponents ?
+                new(data[0], data[1], data[2], data[3]) :
+                Vector4.Zero;
     }
 
     public static class Vector4ResolverExtensions
