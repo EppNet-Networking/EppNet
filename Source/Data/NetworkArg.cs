@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace EppNet.Data
 {
@@ -25,6 +26,7 @@ namespace EppNet.Data
 
         public new TArg Get() =>
             Value;
+
     }
 
     public sealed class NetworkArg<TArg> : INetworkArg<TArg>
@@ -84,6 +86,7 @@ namespace EppNet.Data
         /// <param name="other"></param>
         /// <returns></returns>
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(INetworkArg other) =>
             other is NetworkArg<TArg> oNetArg &&
             EqualityComparer<TArg>.Default.Equals(Value, oNetArg.Value);
@@ -95,6 +98,7 @@ namespace EppNet.Data
         /// <param name="other"></param>
         /// <returns></returns>
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool SignatureEquals(INetworkArg other) =>
             other is NetworkArg<TArg>;
 
@@ -113,6 +117,9 @@ namespace EppNet.Data
             other is not null &&
             (other.Type.IsAssignableFrom(Type) ||
             Type.IsAssignableFrom(other.Type));
+
+        public override int GetHashCode() =>
+            Value?.GetHashCode() ?? 0;
     }
 
 }
