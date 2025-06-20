@@ -4,7 +4,6 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
-
 namespace EppNet.IO
 {
     public sealed class ExponentialResizeStrategy : IResizeStrategy
@@ -21,5 +20,5 @@ namespace EppNet.IO
             neededBytes * Multiplier;
 
     }
-    
+
 }

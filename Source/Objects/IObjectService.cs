@@ -29,11 +29,12 @@ namespace EppNet.Objects
         public EnumCommandResult TryCreateObject(in Type objectType, out INetworkObject_Impl @object, long networkId = -1);
 
         /// <summary>
-        /// Deletes an <see cref="INetworkObject"/> by network ID
+        /// Enqueues an <see cref="INetworkObject"/> for deletion by network ID after the
+        /// specified number of ticks. 1 indicates next tick.
         /// </summary>
         /// <param name="networkId"></param>
         /// <returns></returns>
-        public EnumCommandResult TryDeleteObject(long networkId);
+        public EnumCommandResult TryDeleteObject(long networkId, int ticksUntilDeletion = 1);
 
         /// <summary>
         /// Tries to fetch a Network Object (<see cref="INetworkObject_Impl"/>) by its network ID

@@ -4,11 +4,8 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
-using EppNet.Utilities;
-
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 
 namespace EppNet.Collections
 {
@@ -18,47 +15,48 @@ namespace EppNet.Collections
 
         public int Index { private set; get; }
 
-        private ImmutableArray<T> _elements;
+        private readonly List<T> _elements;
 
-        public Iterator([NotNull] IEnumerable<T> collection)
+        public Iterator(List<T> list)
         {
-            Guard.AgainstNull(collection);
             this.Index = -1;
-            this._elements = collection.ToImmutableArray();
+            this._elements = list ?? throw new ArgumentNullException(nameof(list));
         }
-
-        /// <summary>
-        /// Increments the internal index to the next one.
-        /// </summary>
-        /// <returns></returns>
-
-        public T Next()
-            => _elements[++Index];
 
         /// <summary>
         /// Checks if we have something next in the iterator
         /// </summary>
         /// <returns></returns>
-
-        public bool HasNext()
-            => (Index + 1) < _elements.Length;
+        public readonly bool HasNext() =>
+            Index + 1 < _elements.Count;
 
         /// <summary>
-        /// Fetches the current object
+        /// Increments the internal index and returns the
+        /// next element
         /// </summary>
         /// <returns></returns>
+        public T Next() =>
+            _elements[++Index];
 
-        public T Current()
-            => (Index == -1)
-            ? default
-            : _elements[Index];
+        public readonly T Current() =>
+            _elements[Index];
+
+        /// <summary>
+        /// Removes the element at the current index
+        /// </summary>
+        /// <returns></returns>
+        public T Remove()
+        {
+            T removed = Current();
+            _elements.RemoveAt(Index--);
+            return removed;
+        }
     }
 
     public static class IteratorExtensions
     {
 
-        public static Iterator<T> Iterator<T>(this IEnumerable<T> enumerable)
-            => new Iterator<T>(enumerable);
+        public static Iterator<T> Iterator<T>(this List<T> list) => new(list);
 
     }
 

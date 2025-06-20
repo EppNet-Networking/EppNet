@@ -14,7 +14,7 @@ using EppNet.Services;
 namespace EppNet.Objects
 {
 
-    public sealed class ObjectServiceServer : Service
+    public sealed class ObjectServiceServer : Service, IObjectService
     {
 
         internal PageList<ObjectSlot> _objects;
@@ -22,7 +22,7 @@ namespace EppNet.Objects
         /// <summary>
         /// Network IDs to ticks left before deletion
         /// </summary>
-        internal ConcurrentDictionary<long, int> _objectsToDelete;
+        internal List<INetworkObject_Impl> _objectsToDelete;
 
         public ObjectServiceServer(ServiceManager serviceMgr, int slotsPerPage = 64)
             : base(serviceMgr)
@@ -53,14 +53,15 @@ namespace EppNet.Objects
         /// <param name="networkId"></param>
         /// <returns></returns>
 
-        public EnumCommandResult TryDeleteObject(long networkId)
+        public EnumCommandResult TryDeleteObject(long networkId, int ticksUntilDeletion = 1)
         {
             EnumCommandResult result = TryGetObjectById(networkId, out INetworkObject_Impl @object);
 
             if (result == EnumCommandResult.Ok)
             {
                 @object.State.Set(EnumObjectState.PendingDelete);
-                _objectsToDelete.AddOrUpdate(networkId, 1, null);
+                @object.TicksUntilDeletion.Set(ticksUntilDeletion);
+                _objectsToDelete.Add(@object);
             }
 
             return result;
@@ -94,31 +95,32 @@ namespace EppNet.Objects
 
         public override bool Tick(float dt)
         {
-            bool canTick = base.Tick(dt);
+            bool doTick = base.Tick(dt);
 
-            if (canTick)
+            if (doTick)
             {
-                foreach (KeyValuePair<long, int> kvp in _objectsToDelete)
+                Iterator<INetworkObject_Impl> iterator = _objectsToDelete.Iterator();
+
+                while (iterator.HasNext())
                 {
-                    long networkId = kvp.Key;
-                    int ticks = kvp.Value;
+                    INetworkObject_Impl @object = iterator.Next();
+                    long ticks = @object.TicksUntilDeletion.Decrement();
 
-                    if (ticks-- <= 0)
+                    if (ticks <= 0)
                     {
-                        // Let's delete this object
-                        if (_objects.TryGetById(networkId, out ObjectSlot slot))
-                        {
-                            // TODO: Delete this object
-                        }
+                        // Time to go bye-bye!
+                        iterator.Remove();
 
-                        _objectsToDelete.TryRemove(networkId, out _);
+                        // TODO: Perhaps debug message if failed to free?
+                        bool freed = _objects.TryFree(@object.SlotID);
+
+                        // TODO: Call user deletion logic
                     }
-                    else
-                        _objectsToDelete.AddOrUpdate(networkId, ticks, null);
                 }
+
             }
 
-            return canTick;
+            return doTick;
         }
 
     }

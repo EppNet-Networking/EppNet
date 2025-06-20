@@ -7,6 +7,7 @@
 using EppNet.Collections;
 using EppNet.Commands;
 using EppNet.Data;
+using EppNet.Data.Wrappers;
 using EppNet.Logging;
 using EppNet.Node;
 using EppNet.Utilities;
@@ -40,22 +41,29 @@ namespace EppNet.Objects
         /// The ID associated with this Network Object
         /// </summary>
         public long ID { get; }
+        
+        /// <summary>
+        /// The ID associated with the slot in the pagination system<br/>
+        /// <strong>NOTE!</strong> This is left unused on the client-side
+        /// </summary>
+        public long SlotID { get; }
 
-        public InternalProperty<INetworkObject_Impl> Parent { get; }
+        public ManagedInternalProperty<INetworkObject_Impl> Parent { get; }
 
-        public InternalProperty<List<INetworkObject_Impl>> Children { get; }
+        public ManagedInternalProperty<List<INetworkObject_Impl>> Children { get; }
 
         public Action<StateChangedEvent> OnStateChanged { get; }
         public Action<ParentChangedEvent> OnParentChanged { get; }
         public Action<ChildAddedEvent> OnChildAdded { get; }
         public Action<ChildRemovedEvent> OnChildRemoved { get; }
 
-        public InternalProperty<long> TicksUntilDeletion { get; }
+        public LongInternalProperty TicksUntilDeletion { get; }
 
         /// <summary>
         /// Whether or not deletion is requested for this object
         /// </summary>
-        public bool IsDeleteRequested => TicksUntilDeletion.Value > 0;
+        public bool IsDeleteRequested =>
+            TicksUntilDeletion.Value != -1;
 
         public new bool Equals(INetworkObject_Impl other)
             => other is not null &&
