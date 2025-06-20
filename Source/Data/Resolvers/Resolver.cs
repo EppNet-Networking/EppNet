@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using EppNet.IO;
+using EppNet.Utilities;
 
 using System;
 using System.Collections.Generic;
@@ -274,30 +275,17 @@ namespace EppNet.Data
     public static class ResolverExtensions
     {
 
-        public static ReadResult ReadAsInt<T>(this Resolver<T> resolver, ref BytePayloadReader reader, out int length) where T : IComparable<T>, IConvertible
-        {
-            ReadResult result = resolver.Read(ref reader, out T output);
-            length = Convert.ToInt32(output);
-            return result;
-        }
-
         public static ReadResult ReadAs<T, TOutput>(this Resolver<T> resolver, ref BytePayloadReader reader, out TOutput output)
-            where T : unmanaged
-            where TOutput : unmanaged
+            where T : unmanaged, IComparable<T>, IConvertible
+            where TOutput : unmanaged, IComparable<TOutput>, IConvertible
         {
             output = default;
-            ReadResult result = resolver.Read(ref reader, out T typedOutput);
 
+            ReadResult result = resolver.Read(ref reader, out T typedOutput);
             if (!result.IsSuccess())
                 return result;
 
-            // Ensure sizes match
-            if (Unsafe.SizeOf<T>() != Unsafe.SizeOf<TOutput>())
-                throw new InvalidOperationException($"Cannot reinterpret cast from {typeof(T)} to {typeof(TOutput)} due to size mismatch.");
-
-            // Bitwise reinterpret cast using stackalloc
-            Span<T> sourceSpan = stackalloc T[1] { typedOutput };
-            output = Unsafe.ReadUnaligned<TOutput>(ref Unsafe.As<T, byte>(ref typedOutput));
+            output = NumberExtensions.CreateChecked<T, TOutput>(typedOutput);
             return result;
         }
 
@@ -354,9 +342,9 @@ namespace EppNet.Data
 
             return ((header >> 6) & 0b11) switch
             {
-                0 => ByteResolver.Instance.ReadAsInt(ref reader, out length),
-                1 => UShortResolver.Instance.ReadAsInt(ref reader, out length),
-                _ => UInt32Resolver.Instance.ReadAsInt(ref reader, out length)
+                0 => ByteResolver.Instance.ReadAs(ref reader, out length),
+                1 => UShortResolver.Instance.ReadAs(ref reader, out length),
+                _ => UInt32Resolver.Instance.ReadAs(ref reader, out length)
             };
         }
 
