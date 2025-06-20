@@ -32,9 +32,14 @@ namespace EppNet.IO
         public int PoolSize { get => _pool.Count; }
         public int CurrentlyRented { get => _rented.Count; }
 
+        /// <summary>
+        /// The maximum payload lifetime in milliseconds
+        /// </summary>
+        public int MaxPayloadLifetime { get => _maxPayloadLifetime; }
+
         public IResizeStrategy ResizeStrategy { get; }
 
-        protected int _rents, _returns, _prunes;
+        protected int _rents, _returns, _prunes, _maxPayloadLifetime;
 
         private readonly ConcurrentBag<BytePayload> _pool;
 
@@ -56,6 +61,7 @@ namespace EppNet.IO
             this._pool = new();
             this._rented = new();
             this._nextId = -1;
+            this._maxPayloadLifetime = 2000;
         }
 
         /// <summary>
@@ -81,6 +87,36 @@ namespace EppNet.IO
             _rented.TryAdd(payload._poolId, new WeakReference<BytePayload>(payload));
             Interlocked.Increment(ref _rents);
             return payload;
+        }
+
+        public int Purge()
+        {
+            int purged = 0;
+            DateTime now = DateTime.Now;
+
+            foreach (KeyValuePair<int, WeakReference<BytePayload>> kvp in _rented)
+            {
+                if (kvp.Value.TryGetTarget(out BytePayload payload))
+                {
+                    int milliseconds = (now - payload.LastUse).Milliseconds;
+
+                    if (milliseconds >= MaxPayloadLifetime)
+                    {
+                        // We can return this back to the pool.
+                        // TODO: Perhaps log that we exceeded the lifetime
+                        Return(payload);
+                        purged++;
+                    }
+
+                    continue;
+                }
+
+                // The payload is invalid
+                _rented.TryRemove(kvp.Key, out _);
+                purged++;
+            }
+
+            return purged;
         }
 
         /// <summary>
@@ -120,10 +156,14 @@ namespace EppNet.IO
                 return false;
             }
 
-            _pool.Add(payload);
-            _rented.TryRemove(payload._poolId, out _);
-            Interlocked.Increment(ref _returns);
-            return true;
+            if (_rented.TryRemove(payload._poolId, out _))
+            {
+                _pool.Add(payload);
+                Interlocked.Increment(ref _returns);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

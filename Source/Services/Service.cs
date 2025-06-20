@@ -62,7 +62,7 @@ namespace EppNet.Services
                 throw new ArgumentNullException(nameof(svcMgr), "Must pass a valid ServiceManager instance to a service!");
 
             // Let's add our debug state change notification
-            OnStateChanged += (ServiceStateChangedEvent evt) => Notify.Debug(new TemplatedMessage("Service State changed to {NewState} from {OldState}", evt.State, evt.OldState));
+            OnStateChanged += evt => Notify.Debug(new TemplatedMessage("Service State changed to {NewState} from {OldState}", evt.State, evt.OldState));
             this.SortOrder = sortOrder;
         }
 
@@ -85,7 +85,8 @@ namespace EppNet.Services
         /// <b>NOTE: Explicit IRunnable override!! </b>Called every tick. See <see cref="Tick(float)"/>
         /// </summary>
 
-        bool IRunnable.Tick(float dt) => Tick(dt);
+        bool IRunnable.Tick(float dt) =>
+            Tick(dt);
 
         public virtual bool Start()
         {

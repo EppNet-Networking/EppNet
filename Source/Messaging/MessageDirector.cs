@@ -16,7 +16,7 @@ namespace EppNet.Messaging
 
         public MessageDirector(ServiceManager svcMgr) : base(svcMgr)
         {
-
+            
         }
 
         public bool Subscribe<T>(T subscriber) where T : IMessageHandler

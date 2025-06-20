@@ -6,7 +6,7 @@
 
 using System;
 
-namespace EppNet.Data.IO
+namespace EppNet.IO
 {
 
     public static class BytePayloadHeader

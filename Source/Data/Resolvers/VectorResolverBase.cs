@@ -89,7 +89,7 @@ namespace EppNet.Data
 
                 else if (int.MinValue <= quantized && quantized <= int.MaxValue)
                     typeIndex = 2;
-                    
+
                 if (typeIndex > largestTypeIndex)
                     largestTypeIndex = typeIndex;
             }
@@ -243,12 +243,12 @@ namespace EppNet.Data
                     fetched = Default;
                     located = true;
                     break;
-                
+
                 case UnitXHeader:
                     fetched = UnitX;
                     located = true;
                     break;
-                
+
                 case UnitYHeader:
                     fetched = UnitY;
                     located = true;
@@ -258,7 +258,7 @@ namespace EppNet.Data
                     fetched = UnitZ;
                     located = true;
                     break;
-                
+
                 case UnitWHeader:
                     fetched = UnitW;
                     located = true;
@@ -268,7 +268,7 @@ namespace EppNet.Data
                     fetched = One;
                     located = true;
                     break;
-                
+
                 default:
                     break;
 

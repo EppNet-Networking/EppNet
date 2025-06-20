@@ -4,17 +4,22 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
-public sealed class ExponentialResizeStrategy : IResizeStrategy
+
+namespace EppNet.IO
 {
-
-    public int Multiplier { get; }
-
-    public ExponentialResizeStrategy(int multiplier = 2)
+    public sealed class ExponentialResizeStrategy : IResizeStrategy
     {
-        this.Multiplier = multiplier;
+
+        public int Multiplier { get; }
+
+        public ExponentialResizeStrategy(int multiplier = 2)
+        {
+            this.Multiplier = multiplier;
+        }
+
+        public int Resize(int neededBytes) =>
+            neededBytes * Multiplier;
+
     }
-
-    public int Resize(int neededBytes) =>
-        neededBytes * Multiplier;
-
+    
 }

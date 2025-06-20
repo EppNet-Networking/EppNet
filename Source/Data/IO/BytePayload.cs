@@ -138,13 +138,25 @@ namespace EppNet.IO
             return new(Buffer, 0, Length);
         }
 
+        public BytePayloadWriter GetWriter(int offset = 0, bool reserveHeader = true)
+        {
+            BytePayloadWriter writer = new(this, offset, reserveHeader);
+            return writer;
+        }
+
+        public BytePayloadReader GetReader(int offset = 0, bool skipHeader = true)
+        {
+            BytePayloadReader reader = new(this, offset, skipHeader);
+            return reader;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EnsureCapacity(int neededBytes, bool exact = false)
         {
-            LastUse = DateTime.Now;
+            Touch();
 
             if (neededBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(neededBytes));
+                    throw new ArgumentOutOfRangeException(nameof(neededBytes));
 
             if (Length + neededBytes <= Capacity)
                 return;
