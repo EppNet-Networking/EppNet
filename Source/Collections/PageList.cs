@@ -362,9 +362,30 @@ namespace EppNet.Collections
 
         public void ClearAll()
         {
-            for (int i = 0; i < Size; i++)
-                TryFree(ref this[i]);
+            try
+            {
+                _lock.EnterWriteLock();
+
+                for (int i = 0; i < Size; i++)
+                {
+                    ref T item = ref _data[i];
+
+                    if (!item.IsFree())
+                    {
+                        List.OnFree?.Invoke(item);
+                        item.Allocated = false;
+                        item.Dispose();
+                    }
+                }
+
+                Array.Clear(_allocated, 0, _allocated.Length);
+
+                Empty = true;
+                AvailableIndex = 0;
+            }
+            finally { _lock.ExitWriteLock(); }
         }
+
 
         public bool TryAllocate(long id, out T allocated)
             => TryAllocate((ulong)id, out allocated);
@@ -407,10 +428,10 @@ namespace EppNet.Collections
 
             int index = (int)item.ID;
 
+            List.OnFree?.Invoke(item);
             item.Allocated = false;
             item.Dispose();
             _Internal_UpdateBit(index, false);
-            List.OnFree?.Invoke(item);
 
             // Check if empty
             IsEmpty();

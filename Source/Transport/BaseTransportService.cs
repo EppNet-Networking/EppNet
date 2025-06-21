@@ -7,6 +7,7 @@
 using EppNet.Clients;
 using EppNet.Collections;
 using EppNet.Commands;
+using EppNet.Connections;
 using EppNet.Data;
 using EppNet.Logging;
 using EppNet.Processes;
@@ -82,9 +83,11 @@ namespace EppNet.Transport
         {
             if (!Started)
             {
-                this._clients = Node.Distro == Distribution.Server
-                    ? new(PageList<ClientSlot<TPeer>>.CalculateItemsPerPage((int)Config.MaxClients))
-                    : null;
+                if (Node.Distro == Distribution.Server)
+                {
+                    _clients = new(PageList<ClientSlot<TPeer>>.CalculateItemsPerPage(Config.MaxClients));
+                    _clients.OnFree += obj => obj.Client.DisconnectNow(DisconnectReasons.Ejected);
+                }
 
                 this._packetDeserializer = new(this, 256);
                 _packetDeserializer.Start();
@@ -103,6 +106,7 @@ namespace EppNet.Transport
                 return false;
 
             _packetDeserializer.Cancel();
+            _clients?.Clear();
             this.Status = ServiceState.Offline;
             return true;
         }

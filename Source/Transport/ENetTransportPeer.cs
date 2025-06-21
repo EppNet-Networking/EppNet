@@ -39,10 +39,12 @@ namespace EppNet.Transport
             this.ID = NativePeer.ID;
         }
 
-        public void Disconnect(DisconnectReason disconnectReason)
+        public void DisconnectLater(DisconnectReason disconnectReason)
         {
             throw new System.NotImplementedException();
         }
+
+        public void DisconnectNow(DisconnectReason reason) { }
 
     }
 

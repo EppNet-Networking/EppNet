@@ -38,7 +38,8 @@ namespace EppNet.Transport
         /// </summary>
         bool IsConnected { get; }
 
-        void Disconnect(DisconnectReason disconnectReason);
+        void DisconnectLater(DisconnectReason disconnectReason);
+        void DisconnectNow(DisconnectReason disconnectReason);
     }
 
     public interface ITransportPeer<TTransport, TNativePeer> : ITransportPeer
