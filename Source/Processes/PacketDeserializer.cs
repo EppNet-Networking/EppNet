@@ -6,11 +6,12 @@
 
 using ENet;
 
-using EppNet.Data.Datagrams;
 using EppNet.Logging;
+using EppNet.Messaging;
 using EppNet.Processes.Events;
-using EppNet.Registers;
+
 using EppNet.Sockets;
+using EppNet.Transport;
 
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -26,19 +27,18 @@ namespace EppNet.Processes
 
         public ILoggable Notify { get => this; }
 
-        protected BaseSocket _socket;
-        protected DatagramRegister _dgRegister;
+        protected ITransport _transport;
+
         protected MultithreadedBuffer<PacketReceivedEvent> _buffer;
 
-        public PacketDeserializer([NotNull] BaseSocket socket, int bufferSize)
+        public PacketDeserializer([NotNull] ITransport transport, int bufferSize)
         {
-            this._socket = socket;
+            this._transport = transport ?? throw new ArgumentNullException(nameof(transport));
 
-            MultithreadedBufferBuilder<PacketReceivedEvent> builder = new(socket.Node, bufferSize);
-            this._buffer = builder.ThenUseHandlers(this).ThenUseHandlers(socket.ChannelService).Build();
+            MultithreadedBufferBuilder<PacketReceivedEvent> builder = new(transport.Node, bufferSize);
+            this._buffer = builder.ThenUseHandlers(this).ThenUseHandlers(transport.Node.Services.GetService<ChannelService>()).Build();
 
-            this._dgRegister = DatagramRegister.Get();
-            this.DroppedBytes = 0;
+            this.DroppedBytes = this.DroppedPackets = 0;
         }
 
         public bool Handle(PacketReceivedEvent data)
@@ -46,20 +46,7 @@ namespace EppNet.Processes
             byte[] bytes = data.Data;
             byte header = bytes[0];
 
-            IRegistration dgRegistration = _dgRegister.Get(header);
 
-            if (dgRegistration == null)
-            {
-                Notify.Error(new TemplatedMessage("Received new datagram of unknown type with header {id}! Is it registered correctly?", header));
-                return false;
-            }
-
-            Datagram dg = dgRegistration.NewInstance() as Datagram;
-            dg.Sender = data.Sender;
-            dg.ReadFrom(data.Data);
-            data.Datagram = dg;
-
-            dg.Read();
             return true;
         }
 

@@ -4,6 +4,7 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Data.Wrappers;
 using EppNet.Utilities;
 
 using System;
@@ -18,8 +19,14 @@ using System.Threading;
 namespace EppNet.Collections
 {
 
-    public class PageList<T> : IDisposable where T : struct, IPageable
+    public class PageList<T> : IDisposable
+        where T : struct, IPageable
     {
+        public static int CalculateItemsPerPage(int maxItems) =>
+            maxItems < 64
+            ? 64
+            : ((maxItems + 63) / 64) * 64;
+
         public readonly int ItemsPerPage;
         public Action<T> OnAllocate;
         public Action<T> OnFree;

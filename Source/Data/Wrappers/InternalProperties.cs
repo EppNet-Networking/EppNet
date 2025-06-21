@@ -61,6 +61,11 @@ namespace EppNet.Data.Wrappers
             }
         }
 
+        internal void Reset()
+        {
+            Set(default);
+        }
+
         public override string ToString() =>
             Value?.ToString() ?? "null";
 
@@ -71,21 +76,33 @@ namespace EppNet.Data.Wrappers
 
     public class ManagedInternalProperty<T> : InternalProperty<T>
         where T : class
-    { }
-
-    public abstract class NumericInternalProperty<T> : InternalProperty<T>
-        where T : struct
     {
 
-        internal abstract T Increment();
-        internal abstract T Decrement();
-        internal abstract T Add(T delta);
-        internal abstract T Subtract(T delta);
+        public ManagedInternalProperty(T defaultValue = null) : base(defaultValue)
+        { }
 
     }
 
+    public abstract class NumericInternalProperty<T> : InternalProperty<T>
+            where T : struct
+        {
+
+            protected NumericInternalProperty(T defaultValue = default) : base(defaultValue)
+            {
+            }
+
+            internal abstract T Increment();
+            internal abstract T Decrement();
+            internal abstract T Add(T delta);
+            internal abstract T Subtract(T delta);
+
+        }
+
     public class IntInternalProperty : NumericInternalProperty<int>
     {
+
+        public IntInternalProperty(int defaultValue) : base(defaultValue)
+        { }
 
         internal override int Increment()
         {
@@ -120,6 +137,9 @@ namespace EppNet.Data.Wrappers
     public class LongInternalProperty : NumericInternalProperty<long>
     {
 
+        public LongInternalProperty(long defaultValue = 0L) : base(defaultValue)
+        { }
+
         internal override long Increment()
         {
             long newValue = Value + 1;
@@ -152,6 +172,9 @@ namespace EppNet.Data.Wrappers
 
     public class FloatInternalProperty : NumericInternalProperty<float>
     {
+
+        public FloatInternalProperty(float defaultValue = 0f) : base(defaultValue)
+        { }
 
         internal override float Increment()
         {
@@ -186,6 +209,9 @@ namespace EppNet.Data.Wrappers
     public class DoubleInternalProperty : NumericInternalProperty<double>
     {
 
+        public DoubleInternalProperty(double defaultValue = 0d) : base(defaultValue)
+        { }
+
         internal override double Increment()
         {
             double newValue = Value + 1d;
@@ -212,6 +238,24 @@ namespace EppNet.Data.Wrappers
             double newValue = Value - delta;
             Set(newValue);
             return newValue;
+        }
+
+    }
+
+    public class BoolInternalProperty : InternalProperty<bool>
+    {
+        public BoolInternalProperty(bool defaultValue = false) : base(defaultValue)
+        { }
+
+        /// <summary>
+        /// Toggles this property
+        /// </summary>
+        /// <returns></returns>
+        internal bool Toggle()
+        {
+            bool current = Value;
+            Set(!Value);
+            return current;
         }
 
     }

@@ -4,14 +4,18 @@
 /// Author: Maverick Liberty
 ///////////////////////////////////////////////////////
 
+using EppNet.Data;
 using EppNet.Node;
 using EppNet.Services;
 
-using System;
-
-public interface ITransport : INodeDescendant, IRunnable, IDisposable
+namespace EppNet.Transport
 {
 
-    
+    public interface ITransport : INodeDescendant, IService
+    {
+
+        Timestamp CreateTimestamp { get; }
+
+    }
 
 }

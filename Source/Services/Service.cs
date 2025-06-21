@@ -27,7 +27,7 @@ namespace EppNet.Services
         /// </summary>
         public int SortOrder;
 
-        public bool Started { private set; get; }
+        public bool Started { protected set; get; }
 
         public ServiceState Status
         {

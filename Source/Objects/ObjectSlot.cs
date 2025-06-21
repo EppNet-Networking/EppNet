@@ -29,21 +29,16 @@ namespace EppNet.Objects
         /// <exception cref="ArgumentOutOfRangeException">ID must be positive</exception>
         /// <param name="id"></param>
 
-        public static explicit operator ObjectSlot(long id)
-        {
-            if (id < 0)
-                throw new ArgumentOutOfRangeException(nameof(id), "ID must be positive!");
+        public static explicit operator ObjectSlot(long id) =>
+            (id < 0)
+            ? throw new ArgumentOutOfRangeException(nameof(id), "ID must be positive!")
+            : new() { ID = id };
 
-            return new()
-            {
-                ID = id
-            };
-        }
-
-        public static bool operator ==(ObjectSlot left, ObjectSlot right)
-            => left.Equals(right);
-        public static bool operator !=(ObjectSlot left, ObjectSlot right)
-            => !left.Equals(right);
+        public static bool operator ==(ObjectSlot left, ObjectSlot right) =>
+            left.Equals(right);
+        
+        public static bool operator !=(ObjectSlot left, ObjectSlot right) =>
+            !left.Equals(right);
 
         #endregion
 
@@ -64,7 +59,7 @@ namespace EppNet.Objects
         /// <summary>
         /// A pointer to the <see cref="ObjectAgent"/> i.e. controller for the user object.
         /// </summary>
-        public INetworkObject_Impl Object;
+        internal INetworkObject_Impl Object;
 
         public ObjectSlot(IPage page, long id, INetworkObject_Impl @object)
         {
@@ -89,8 +84,8 @@ namespace EppNet.Objects
         /// <param name="obj"></param>
         /// <returns>The specified object is an ObjectSlot that shares our ID</returns>
 
-        public readonly override bool Equals(object obj)
-            => obj is ObjectSlot slot &&
+        public readonly override bool Equals(object obj) =>
+            obj is ObjectSlot slot &&
             Equals(slot);
 
         /// <summary>
@@ -99,8 +94,8 @@ namespace EppNet.Objects
         /// </summary>
         /// <param name="other"></param>
         /// <returns>Whether or not the provided ObjectSlot has an equivalent ID</returns>
-        public readonly bool Equals(ObjectSlot other)
-            => other.Page == Page &&
+        public readonly bool Equals(ObjectSlot other) =>
+            other.Page == Page &&
             other.ID == ID &&
             other.Object == Object;
 
@@ -109,8 +104,8 @@ namespace EppNet.Objects
         /// </summary>
         /// <returns>ID#GetHashCode()</returns>
 
-        public readonly override int GetHashCode()
-            => ID.GetHashCode() ^ 
+        public readonly override int GetHashCode() =>
+            ID.GetHashCode() ^ 
             Page.GetHashCode() ^
             (Object != null ? Object.GetHashCode() : 1);
     }

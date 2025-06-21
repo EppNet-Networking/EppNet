@@ -5,7 +5,6 @@
 //////////////////////////////////////////////
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace EppNet.Logging
 {
@@ -17,8 +16,11 @@ namespace EppNet.Logging
     {
 
         #region Operators
-        public static bool operator ==(TemplatedMessage left, TemplatedMessage right) => left.Equals(right);
-        public static bool operator !=(TemplatedMessage left, TemplatedMessage right) => !left.Equals(right);
+        public static bool operator ==(TemplatedMessage left, TemplatedMessage right) =>
+            left.Equals(right);
+        
+        public static bool operator !=(TemplatedMessage left, TemplatedMessage right) =>
+            !left.Equals(right);
 
         #endregion
 
@@ -27,11 +29,11 @@ namespace EppNet.Logging
 
         public TemplatedMessage(string message, params object[] objects)
         {
-            this.Message = message;
+            this.Message = message ?? throw new ArgumentNullException(message);
             this.Objects = objects;
         }
 
-        public override bool Equals([NotNullWhen(true)] object obj)
+        public override bool Equals(object obj)
         {
             if (obj is TemplatedMessage other)
                 return other.Message.Equals(Message) && other.Objects.Equals(Objects);
@@ -39,7 +41,8 @@ namespace EppNet.Logging
             return false;
         }
 
-        public bool Equals(TemplatedMessage other) => other.Message.Equals(Message) && other.Objects == Objects;
+        public bool Equals(TemplatedMessage other) =>
+            other.Message.Equals(Message) && other.Objects == Objects;
 
         public override int GetHashCode()
         {
@@ -48,7 +51,8 @@ namespace EppNet.Logging
             return hashCode;
         }
 
-        public bool Empty() => string.IsNullOrEmpty(Message);
+        public bool Empty() =>
+            string.IsNullOrEmpty(Message);
 
     }
 

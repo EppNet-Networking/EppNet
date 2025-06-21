@@ -70,7 +70,17 @@ namespace EppNet.Services
                 return false;
 
             foreach (Service service in _services)
-                service.Tick(dt);
+            {
+                try
+                {
+                    service.Tick(dt);
+                }
+                catch (Exception ex)
+                {
+                    Node.HandleException(ex);
+                }
+            }
+
 
             return true;
         }

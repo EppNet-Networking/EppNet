@@ -6,45 +6,55 @@
 
 using EppNet.Data;
 using EppNet.Connections;
+using EppNet.Transport;
 
-public interface ITransportPeer : IDataHolder
+namespace EppNet.Transport
 {
 
-    /// <summary>
-    /// The unique identifier for this peer
-    /// </summary>
-    long Id { get; }
+    public interface ITransportPeer : IDataHolder
+    {
+        /// <summary>
+        /// The unique identifier for this peer
+        /// </summary>
+        long ID { get; }
 
-    /// <summary>
-    /// The peer object native to the transport
-    /// </summary>
-    object NativePeer { get; }
+        /// <summary>
+        /// The first time we made contact with this peer
+        /// </summary>
+        Timestamp ConnectedTimestamp { get; }
 
-    /// <summary>
-    /// The transport mechanism this peer is associated with
-    /// </summary>
-    ITransport Transport { get; }
+        /// <summary>
+        /// Whether or not this peer has synchronized to the current network time
+        /// </summary>
+        bool IsSynchronized { get; }
 
-    /// <summary>
-    /// The first time we made contact with this peer
-    /// </summary>
-    Timestamp ConnectedTimestamp { get; }
+        /// <summary>
+        /// Whether or not this peer has been authenticated
+        /// </summary>
+        bool IsAuthenticated { get; }
 
-    /// <summary>
-    /// Whether or not this peer has synchronized to the current network time
-    /// </summary>
-    bool IsSynchronized { get; }
+        /// <summary>
+        /// Whether or not this peer is connected
+        /// </summary>
+        bool IsConnected { get; }
 
-    /// <summary>
-    /// Whether or not this peer has been authenticated
-    /// </summary>
-    bool IsAuthenticated { get; }
+        void Disconnect(DisconnectReason disconnectReason);
+    }
 
-    /// <summary>
-    /// Whether or not this peer is connected
-    /// </summary>
-    bool IsConnected { get; }
+    public interface ITransportPeer<TTransport, TNativePeer> : ITransportPeer
+        where TTransport : class, ITransport
+    {
 
-    void Disconnect(DisconnectReason disconnectReason);
+        /// <summary>
+        /// The peer object native to the transport
+        /// </summary>
+        TNativePeer NativePeer { get; }
+
+        /// <summary>
+        /// The transport mechanism this peer is associated with
+        /// </summary>
+        TTransport Transport { get; }
+
+    }
 
 }
