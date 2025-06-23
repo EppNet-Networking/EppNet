@@ -16,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace EppNet.Transport
 {
 
-    public sealed class ENetTransportService : BaseTransportService<ENetTransportService, Peer, ENetTransportPeer>
+    public sealed class ENetTransportService : BaseTransportService
     {
 
         private Host _enet_host;
@@ -56,7 +56,7 @@ namespace EppNet.Transport
                 else if (Node.Distro == Distribution.Client)
                 {
                     _enet_host.Create();
-                    _serverPeer = new(this, _enet_host.Connect(_enet_addr));
+                    _serverPeer = new ENetTransportPeer(this, _enet_host.Connect(_enet_addr));
                     Notify.Info($"Trying to connect to {Config.IP}:{Config.Port}...");
                 }
                 else
@@ -68,15 +68,43 @@ namespace EppNet.Transport
             return false;
         }
 
+        public override bool Tick(float dt)
+        {
+            if (!Started)
+                return false;
+
+            bool polled = false;
+            while (!polled)
+            {
+                if (_enet_host.CheckEvents(out _enet_event) <= 0)
+                {
+                    if (_enet_host.Service(TimeoutMs, out _enet_event) <= 0)
+                        break;
+
+                    polled = true;
+                    LastPollTimestamp = new(this);
+                }
+            }
+        }
+
+
         public override bool Stop()
         {
-            if (base.Stop())
+            if (!Started)
+                return false;
+
+            Library.Deinitialize();
+
+            if (!IsServer)
             {
-                Library.Deinitialize();
-                return true;
+                _serverPeer.Dispose();
+                _serverPeer = null;
             }
 
-            return false;
+            _enet_host.Flush();
+            _enet_host.Dispose();
+
+            return base.Stop();
         }
 
         public override int TransportMaxClients() =>

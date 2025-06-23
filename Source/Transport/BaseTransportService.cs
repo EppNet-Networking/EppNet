@@ -12,6 +12,7 @@ using EppNet.Data;
 using EppNet.Logging;
 using EppNet.Processes;
 using EppNet.Services;
+using EppNet.Time;
 
 using System.Diagnostics.CodeAnalysis;
 
@@ -19,28 +20,45 @@ using System.Diagnostics.CodeAnalysis;
 namespace EppNet.Transport
 {
 
-    public abstract class BaseTransportService<TTransport, TNativePeer, TPeer> : Service, ITransport
-        where TPeer : class, ITransportPeer
-        where TTransport : class, ITransport
+    public abstract class BaseTransportService : Service, ITransport
     {
 
         public TransportConfig Config { get; }
 
         public Timestamp CreateTimestamp { private set; get; }
+        public Timestamp LastPollTimestamp { protected set; get; }
+
+        public int TimeoutMs { protected set; get; }
+
+        public IClock Clock { protected set; get; }
+
+        public bool IsServer =>
+            Node.Distro == Distribution.Server;
 
         protected PacketDeserializer _packetDeserializer;
 
-        protected PageList<ClientSlot<TPeer>> _clients;
-        protected TPeer _serverPeer;
+        protected PageList<ClientSlot<ITransportPeer>> _clients;
+        protected ITransportPeer _serverPeer;
 
         protected BaseTransportService([NotNull] ServiceManager svcMgr, TransportConfig config = default, int sortOrder = 0)
             : base(svcMgr, sortOrder)
         {
             this.Config = config ?? TransportConfig.Default;
             this.CreateTimestamp = default;
+            this.Clock = null;
             this._packetDeserializer = null;
             this._clients = null;
             this._serverPeer = null;
+        }
+
+        /// <summary>
+        /// Function called when a new peer connects
+        /// </summary>
+        /// <param name="newPeer"></param>
+        /// <returns></returns>
+        public virtual bool OnPeerConnected(ITransportPeer newPeer)
+        {
+            return false;
         }
 
         protected virtual EnumCommandResult ValidateConfig()
@@ -85,10 +103,14 @@ namespace EppNet.Transport
             {
                 if (Node.Distro == Distribution.Server)
                 {
-                    _clients = new(PageList<ClientSlot<TPeer>>.CalculateItemsPerPage(Config.MaxClients));
+                    _clients = new(PageList<ClientSlot<ITransportPeer>>.CalculateItemsPerPage(Config.MaxClients));
                     _clients.OnFree += obj => obj.Client.DisconnectNow(DisconnectReasons.Ejected);
                 }
 
+                // Let's begin the clock!
+                Clock.Start();
+
+                // TODO: Add means to adjust the buffer size
                 this._packetDeserializer = new(this, 256);
                 _packetDeserializer.Start();
 
@@ -105,8 +127,10 @@ namespace EppNet.Transport
             if (!Started || Status != ServiceState.Online)
                 return false;
 
+            Clock.Stop();
             _packetDeserializer.Cancel();
             _clients?.Clear();
+
             this.Status = ServiceState.Offline;
             return true;
         }

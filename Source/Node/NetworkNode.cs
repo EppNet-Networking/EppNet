@@ -10,10 +10,12 @@ using EppNet.IO;
 using EppNet.Logging;
 using EppNet.Services;
 using EppNet.Sockets;
+using EppNet.Transport;
 
 using Serilog;
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace EppNet.Node
@@ -41,67 +43,24 @@ namespace EppNet.Node
         /// </summary>
         public ServiceManager Services { get => _serviceMgr; }
 
-        /// <summary>
-        /// The <see cref="BaseSocket"/> associated with this Node.<br/>
-        /// If you try to get the Socket without creating one first, it will<br/>
-        /// generate a default node based on the <see cref="Distribution"/> type.<br/>
-        /// - <see cref="Distribution.Client"/> => <see cref="ClientSocket"/><br/>
-        /// - <see cref="Distribution.Server"/> => <see cref="ServerSocket"/>
-        /// </summary>
-        public BaseSocket Socket
-        {
-            get
-            {
-                if (_socket == null)
-                {
-                    switch (Distro)
-                    {
-                        case Distribution.Client:
-                            new ClientSocket(this);
-                            break;
-
-                        case Distribution.Server:
-                            new ServerSocket(this);
-                            break;
-                    }
-
-                }
-
-                return _socket;
-            }
-
-        }
+        public BaseTransportService TransportService { internal set; get; }
 
         /// <summary>
         /// Fetches the Network Time as shown on the Network Clock<br/>
         /// Returns 0 if the socket is not running
         /// </summary>
 
-        public TimeSpan Time
-        {
+        public TimeSpan Time =>
+            TransportService?.Clock.Time ?? TimeSpan.Zero;
 
-            get
-            {
-                if (Socket != null && Socket.Clock != null)
-                    return Socket.Clock.Time;
-
-                return TimeSpan.Zero;
-            }
-
-        }
+        public TimeSpan LocalTime => _stopwatch.Elapsed;
 
         /// <summary>
         /// A structure with the current network and monotonic times
         /// </summary>
 
-        public Timestamp Timestamp
-        {
-            get
-            {
-                TimeSpan netTime = Time;
-                return new(netTime);
-            }
-        }
+        public Timestamp Timestamp =>
+            new(Time, LocalTime);
 
         public NodeDataStorage DataStorage { get; }
 
@@ -109,6 +68,8 @@ namespace EppNet.Node
         internal BaseSocket _socket;
 
         internal readonly int _index;
+
+        internal Stopwatch _stopwatch;
 
         private RuntimeFileMetadata _logMetadata;
 
@@ -126,6 +87,10 @@ namespace EppNet.Node
 
             this._serviceMgr = serviceManager ?? new(this);
             this._socket = socket;
+
+            this._stopwatch = new();
+            this._stopwatch.Start();
+
             this._logMetadata = null;
 
             Serilog.Debugging.SelfLog.Enable(Console.Error);
@@ -176,7 +141,7 @@ namespace EppNet.Node
         public bool TryStart()
         {
 
-            
+            _stopwatch.Start();
 
             /*
             // Try to create our socket
@@ -204,24 +169,6 @@ namespace EppNet.Node
         }
 
         /// <summary>
-        /// Polls our socket for new network events
-        /// </summary>
-        /// <param name="timeoutMs"></param>
-        /// <returns></returns>
-
-        public bool Poll(int timeoutMs = 0)
-        {
-            if (!Started)
-            {
-                Notify.Error("Tried to poll without calling #TryStart()!");
-                return false;
-            }
-
-            Socket.Poll(timeoutMs);
-            return true;
-        }
-
-        /// <summary>
         /// Ticks for configuration changes, ticks the socket, and ticks all
         /// services
         /// </summary>
@@ -242,7 +189,7 @@ namespace EppNet.Node
                 DataStorage.Configuration.Dirty = false;
             }
 
-            Socket.Tick(delta);
+            TransportService.Tick(delta);
             Services.Tick(delta);
             return true;
         }
@@ -268,8 +215,7 @@ namespace EppNet.Node
                 Notify.Warn(warning);
             }
 
-            Console.Beep();
-            Socket.Dispose(!finalizer);
+            _stopwatch.Stop();
             Services.Stop();
             Started = false;
 

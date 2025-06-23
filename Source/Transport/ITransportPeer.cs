@@ -6,12 +6,13 @@
 
 using EppNet.Data;
 using EppNet.Connections;
-using EppNet.Transport;
+using System;
+using System.Net;
 
 namespace EppNet.Transport
 {
 
-    public interface ITransportPeer : IDataHolder
+    public interface ITransportPeer : IDataHolder, IDisposable
     {
         /// <summary>
         /// The unique identifier for this peer
@@ -19,9 +20,24 @@ namespace EppNet.Transport
         long ID { get; }
 
         /// <summary>
+        /// The peer's IP address + port
+        /// </summary>
+        IPEndPoint EndPoint { get; }
+
+        /// <summary>
         /// The first time we made contact with this peer
         /// </summary>
         Timestamp ConnectedTimestamp { get; }
+
+        /// <summary>
+        /// The transport mechanism this peer is associated with
+        /// </summary>
+        BaseTransportService Transport { get; }
+
+        /// <summary>
+        /// The peer object native to the transport
+        /// </summary>
+        object NativePeer { get; }
 
         /// <summary>
         /// Whether or not this peer has synchronized to the current network time
@@ -40,22 +56,9 @@ namespace EppNet.Transport
 
         void DisconnectLater(DisconnectReason disconnectReason);
         void DisconnectNow(DisconnectReason disconnectReason);
-    }
 
-    public interface ITransportPeer<TTransport, TNativePeer> : ITransportPeer
-        where TTransport : class, ITransport
-    {
-
-        /// <summary>
-        /// The peer object native to the transport
-        /// </summary>
-        TNativePeer NativePeer { get; }
-
-        /// <summary>
-        /// The transport mechanism this peer is associated with
-        /// </summary>
-        TTransport Transport { get; }
-
+        string ToString() =>
+            $"Peer {ID} \n{EndPoint.Address}:{EndPoint.Port}";
     }
 
 }

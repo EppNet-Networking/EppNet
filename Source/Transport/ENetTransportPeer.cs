@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////
 
 using System;
+using System.Net;
 using ENet;
 
 using EppNet.Connections;
@@ -14,13 +15,17 @@ using EppNet.Node;
 namespace EppNet.Transport
 {
 
-    public class ENetTransportPeer : ITransportPeer<ENetTransportService, Peer>
+    public class ENetTransportPeer : ITransportPeer
     {
         public long ID { private set; get; }
 
-        public Peer NativePeer { private set; get; }
+        public IPEndPoint EndPoint { private set; get; }
 
-        public ENetTransportService Transport { private set; get; }
+        public object NativePeer { private set; get; }
+
+        public Peer ENet_Peer { private set; get; }
+
+        public BaseTransportService Transport { private set; get; }
 
         public Timestamp ConnectedTimestamp => throw new System.NotImplementedException();
 
@@ -34,9 +39,11 @@ namespace EppNet.Transport
 
         public ENetTransportPeer(ENetTransportService transport, Peer nativePeer)
         {
-            this.Transport = transport ?? throw new ArgumentNullException(nameof(transport));
+            this.Transport = (BaseTransportService) transport ?? throw new ArgumentNullException(nameof(transport));
             this.NativePeer = nativePeer;
-            this.ID = NativePeer.ID;
+            this.ID = nativePeer.ID;
+            this.ENet_Peer = nativePeer;
+            this.EndPoint = new(IPAddress.Parse(nativePeer.IP), nativePeer.Port);
         }
 
         public void DisconnectLater(DisconnectReason disconnectReason)
@@ -45,6 +52,11 @@ namespace EppNet.Transport
         }
 
         public void DisconnectNow(DisconnectReason reason) { }
+
+        public void Dispose()
+        {
+            this.ENet_Peer.DisconnectNow(0);
+        }
 
     }
 

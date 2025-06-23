@@ -29,72 +29,62 @@ namespace EppNet.Data
 
         public TimeSpan LocalTime { get; }
 
-        public Timestamp(TimeSpan netTime)
+        public Timestamp(TimeSpan netTime, TimeSpan localTime)
         {
             this.NetworkTime = netTime;
-            this.LocalTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
+            this.LocalTime = localTime;
         }
 
         public Timestamp([NotNull] NetworkNode node)
         {
             Guard.AgainstNull(node);
             this.NetworkTime = node.Time;
-            this.LocalTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
+            this.LocalTime = node.LocalTime;
         }
 
-        public Timestamp([NotNull] INodeDescendant nodeDescendant)
-        {
-            Guard.AgainstNull(nodeDescendant);
-            Guard.AgainstNull(nodeDescendant.Node);
-            this.NetworkTime = nodeDescendant.Node.Time;
-            this.LocalTime = TimeSpan.FromMilliseconds(ENet.Library.Time);
-        }
+        public Timestamp([NotNull] INodeDescendant nodeDescendant) : this(nodeDescendant.Node)
+        { }
 
-        public Timestamp(TimeSpan netTime, TimeSpan monoTime)
-        {
-            this.NetworkTime = netTime;
-            this.LocalTime = monoTime;
-        }
-
-        public int CompareTo(object obj)
-            => obj is Timestamp ts ?
+        public int CompareTo(object obj) =>
+            obj is Timestamp ts ?
             CompareTo(ts) :
             0;
 
-        public int CompareTo(Timestamp other)
-            => other.LocalTime.CompareTo(LocalTime);
+        public int CompareTo(Timestamp other) =>
+            other.LocalTime.CompareTo(LocalTime);
 
-        public override bool Equals(object obj)
-            => obj is Timestamp ts &&
+        public override bool Equals(object obj) =>
+            obj is Timestamp ts &&
             Equals(ts);
 
-        public bool Equals(Timestamp other)
-            => other.NetworkTime.Equals(NetworkTime) &&
+        public bool Equals(Timestamp other) =>
+            other.NetworkTime.Equals(NetworkTime) &&
             other.LocalTime.Equals(LocalTime);
 
-        public override int GetHashCode()
-            => NetworkTime.GetHashCode() ^ LocalTime.GetHashCode();
+        public override int GetHashCode() =>
+            NetworkTime.GetHashCode() ^
+            LocalTime.GetHashCode();
 
-        public override string ToString()
-            => $"Network(ticks): {NetworkTime.Ticks}\nLocal(ticks): {LocalTime.Ticks}";
+        public override string ToString() =>
+            $"Network(ticks): {NetworkTime.Ticks}\nLocal(ticks): {LocalTime.Ticks}";
 
-        public static bool operator ==(Timestamp left, Timestamp right)
-            => left.Equals(right);
+        public static bool operator ==(Timestamp left, Timestamp right) =>
+            left.Equals(right);
 
-        public static bool operator !=(Timestamp left, Timestamp right)
-            => !left.Equals(right);
+        public static bool operator !=(Timestamp left, Timestamp right) =>
+            !left.Equals(right);
 
-        public static bool operator >(Timestamp left, Timestamp right)
-            => left.LocalTime > right.LocalTime;
+        public static bool operator >(Timestamp left, Timestamp right) =>
+            left.LocalTime > right.LocalTime;
 
-        public static bool operator <(Timestamp left, Timestamp right)
-            => left.LocalTime < right.LocalTime;
+        public static bool operator <(Timestamp left, Timestamp right) =>
+            left.LocalTime < right.LocalTime;
 
-        public static bool operator >=(Timestamp left, Timestamp right)
-            => left.LocalTime >= right.LocalTime;
+        public static bool operator >=(Timestamp left, Timestamp right) =>
+            left.LocalTime >= right.LocalTime;
 
-        public static bool operator <=(Timestamp left, Timestamp right)
-            => left.LocalTime <= right.LocalTime;
+        public static bool operator <=(Timestamp left, Timestamp right) =>
+            left.LocalTime <= right.LocalTime;
     }
 
 }
