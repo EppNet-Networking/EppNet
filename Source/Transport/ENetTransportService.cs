@@ -56,7 +56,7 @@ namespace EppNet.Transport
                 else if (Node.Distro == Distribution.Client)
                 {
                     _enet_host.Create();
-                    _serverPeer = new ENetTransportPeer(this, _enet_host.Connect(_enet_addr));
+                    ServerPeer = new ENetTransportPeer(this, _enet_host.Connect(_enet_addr));
                     Notify.Info($"Trying to connect to {Config.IP}:{Config.Port}...");
                 }
                 else
@@ -85,6 +85,26 @@ namespace EppNet.Transport
                     LastPollTimestamp = new(this);
                 }
             }
+
+            switch (_enet_event.Type)
+            {
+
+                case EventType.Connect:
+                    break;
+
+                case EventType.Disconnect:
+                    break;
+
+                case EventType.Timeout:
+                    break;
+
+                case EventType.Receive:
+                    break;
+
+            }
+
+
+            return true;
         }
 
 
@@ -94,12 +114,6 @@ namespace EppNet.Transport
                 return false;
 
             Library.Deinitialize();
-
-            if (!IsServer)
-            {
-                _serverPeer.Dispose();
-                _serverPeer = null;
-            }
 
             _enet_host.Flush();
             _enet_host.Dispose();

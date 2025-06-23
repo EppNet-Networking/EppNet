@@ -36,7 +36,8 @@ namespace EppNet.Processes
             this._transport = transport ?? throw new ArgumentNullException(nameof(transport));
 
             MultithreadedBufferBuilder<PacketReceivedEvent> builder = new(transport.Node, bufferSize);
-            this._buffer = builder.ThenUseHandlers(this).ThenUseHandlers(transport.Node.Services.GetService<ChannelService>()).Build();
+            this._buffer = builder.ThenUseHandlers(this)
+                .ThenUseHandlers(transport.Node.Services.GetService<ChannelService>()).Build();
 
             this.DroppedBytes = this.DroppedPackets = 0;
         }

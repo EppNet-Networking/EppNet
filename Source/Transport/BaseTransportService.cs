@@ -32,13 +32,14 @@ namespace EppNet.Transport
 
         public IClock Clock { protected set; get; }
 
+        public ITransportPeer ServerPeer { protected set; get; }
+
         public bool IsServer =>
             Node.Distro == Distribution.Server;
 
         protected PacketDeserializer _packetDeserializer;
 
         protected PageList<ClientSlot<ITransportPeer>> _clients;
-        protected ITransportPeer _serverPeer;
 
         protected BaseTransportService([NotNull] ServiceManager svcMgr, TransportConfig config = default, int sortOrder = 0)
             : base(svcMgr, sortOrder)
@@ -46,9 +47,9 @@ namespace EppNet.Transport
             this.Config = config ?? TransportConfig.Default;
             this.CreateTimestamp = default;
             this.Clock = null;
+            this.ServerPeer = null;
             this._packetDeserializer = null;
             this._clients = null;
-            this._serverPeer = null;
         }
 
         /// <summary>
@@ -126,6 +127,12 @@ namespace EppNet.Transport
         {
             if (!Started || Status != ServiceState.Online)
                 return false;
+
+            if (!IsServer)
+            {
+                ServerPeer.Dispose();
+                ServerPeer = null;
+            }
 
             Clock.Stop();
             _packetDeserializer.Cancel();
